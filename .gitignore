@@ -1,0 +1,55 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Swift Package Manager / Xcode build output
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserdata/
+*.xcuserstate
+*.dSYM/
+
+# Generated app bundles and release artifacts
+dist/
+*.app/
+*.zip
+
+# Generated icon outputs; source is scripts/generate-icon.swift
+Assets/AppIcon/
+
+# Generated repository/context exports
+repomix-output.xml
+
+# Legacy packaged duplicate of the Flask app
+files/
+files.zip
+
+# Python local environment and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+id_rsa*
+id_ed25519*
+secrets.*
+*secret*
+*token*
+
+# Logs and temporary files
+*.log
+tmp/
+temp/

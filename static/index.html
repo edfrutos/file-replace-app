@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Replace Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0d0f12;
+    --surface: #141720;
+    --border:  #232840;
+    --accent:  #e8b84b;
+    --accent2: #4be8a8;
+    --danger:  #e84b4b;
+    --text:    #c8cde0;
+    --muted:   #5a6080;
+    --label:   #7a85b0;
+    --mono:    'JetBrains Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--mono); font-size: 13px;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; padding: 40px 20px 60px;
+  }
+  header {
+    width: 100%; max-width: 780px; margin-bottom: 36px;
+    display: flex; align-items: baseline; gap: 18px;
+    border-bottom: 1px solid var(--border); padding-bottom: 20px;
+  }
+  .logo { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .subtitle { font-size: 11px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+  .step-indicator { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background .3s; }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done   { background: var(--accent2); }
+  .card { width: 100%; max-width: 780px; background: var(--surface); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+  .panel { padding: 28px 32px; border-bottom: 1px solid var(--border); display: none; animation: fadeIn .25s ease; }
+  .panel.visible { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  .panel-title {
+    font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--label); margin-bottom: 22px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .panel-title::after { content:''; flex:1; height:1px; background: var(--border); }
+  .panel-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent); color: var(--bg); font-size: 10px; font-weight: 700; margin-right: 4px;
+  }
+  .field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .field-group.single { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--label); }
+  input[type="text"] {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 2px;
+    color: var(--text); font-family: var(--mono); font-size: 13px;
+    padding: 10px 14px; outline: none; transition: border-color .2s, box-shadow .2s; width: 100%;
+  }
+  input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(232,184,75,.12); }
+  input[type="text"]::placeholder { color: var(--muted); }
+  .file-suggestions {
+    background: var(--bg); border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 2px 2px; max-height: 160px; overflow-y: auto; display: none; position: absolute; width: 100%; z-index: 10;
+  }
+  .file-suggestion { padding: 8px 14px; cursor: pointer; font-size: 12px; color: var(--text); transition: background .15s; }
+  .file-suggestion:hover { background: var(--border); color: var(--accent); }
+  .mode-toggle { display: flex; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+  .mode-btn {
+    flex: 1; font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 9px 14px; border: none; cursor: pointer; background: var(--bg); color: var(--muted); transition: all .2s; outline: none;
+  }
+  .mode-btn:not(:last-child) { border-right: 1px solid var(--border); }
+  .mode-btn.active { background: var(--accent); color: var(--bg); font-weight: 700; }
+  .depth-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+    padding: 10px 14px; background: rgba(232,184,75,.06);
+    border: 1px solid rgba(232,184,75,.2); border-radius: 2px;
+  }
+  .depth-row label { margin: 0; white-space: nowrap; }
+  .depth-row input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+  .depth-val { min-width: 22px; text-align: center; font-weight: 700; color: var(--accent); }
+  .depth-note { font-size: 10px; color: var(--muted); }
+  .btn {
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 11px 24px; border: 1px solid; border-radius: 2px;
+    cursor: pointer; transition: all .2s; outline: none;
+  }
+  .btn-primary  { background: var(--accent);  border-color: var(--accent);  color: var(--bg); }
+  .btn-primary:hover { background: #f5ce6e; border-color: #f5ce6e; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-confirm  { background: var(--accent2); border-color: var(--accent2); color: var(--bg); }
+  .btn-confirm:hover { background: #6ef5c0; }
+  .btn-confirm:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-danger   { background: transparent; border-color: var(--danger); color: var(--danger); }
+  .btn-danger:hover { background: rgba(232,75,75,.1); }
+  .btn-ghost    { background: transparent; border-color: var(--border); color: var(--muted); }
+  .btn-ghost:hover { border-color: var(--label); color: var(--text); }
+  .btn-sm { padding: 6px 14px; font-size: 10px; }
+  .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; align-items: center; }
+  .result-box { background: var(--bg); border: 1px solid var(--border); border-radius: 2px; padding: 20px 22px; margin-top: 20px; }
+  .result-box.success { border-color: rgba(75,232,168,.3); }
+  .result-box.error   { border-color: rgba(232,75,75,.3); }
+  .result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .badge { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border-radius: 2px; font-weight: 600; }
+  .badge-ok  { background: rgba(75,232,168,.15); color: var(--accent2); }
+  .match-count { font-size: 11px; color: var(--muted); }
+  .match-count strong { color: var(--accent); font-size: 13px; }
+  .preview-block {
+    font-size: 12px; line-height: 1.7; color: var(--muted); word-break: break-all;
+    margin-top: 10px; padding: 12px 14px; background: rgba(0,0,0,.3);
+    border-radius: 2px; border-left: 3px solid var(--accent);
+  }
+  .preview-block .hit { background: rgba(232,184,75,.25); color: var(--accent); border-radius: 2px; padding: 0 3px; font-weight: 600; }
+
+  /* ── BARRA DE SELECCIÓN ── */
+  .select-bar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    padding: 7px 12px; background: rgba(255,255,255,.02);
+    border: 1px solid var(--border); border-radius: 2px; flex-wrap: wrap;
+  }
+  .select-bar-label { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--label); }
+  .sel-count { font-size: 11px; color: var(--accent); font-weight: 600; margin-left: auto; }
+
+  /* ── LISTA DE HITS ── */
+  .file-hit-list { display: flex; flex-direction: column; gap: 6px; }
+  .file-hit-item {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 2px;
+    padding: 11px 13px; cursor: pointer; transition: border-color .15s, background .15s;
+    display: grid; grid-template-columns: 18px 1fr; gap: 0 11px; align-items: start;
+    user-select: none;
+  }
+  .file-hit-item:hover { border-color: rgba(232,184,75,.45); }
+  .file-hit-item.selected { border-color: var(--accent2); background: rgba(75,232,168,.035); }
+  .hit-check {
+    width: 16px; height: 16px; border: 1.5px solid var(--muted); border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px; transition: all .15s; font-size: 9px; font-weight: 700; color: transparent;
+  }
+  .file-hit-item.selected .hit-check { background: var(--accent2); border-color: var(--accent2); color: #0d0f12; }
+  .file-hit-path { font-size: 11px; color: var(--accent); margin-bottom: 3px; word-break: break-all; }
+  .file-hit-meta { font-size: 10px; color: var(--muted); margin-bottom: 5px; }
+  .file-hit-preview {
+    font-size: 11px; color: var(--muted); padding: 6px 9px;
+    background: rgba(0,0,0,.3); border-left: 2px solid var(--accent);
+    border-radius: 1px; word-break: break-all; line-height: 1.6;
+  }
+
+  /* ── CONFIRMACION ── */
+  .confirm-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .summary-item { display: flex; flex-direction: column; gap: 5px; }
+  .summary-item.full { grid-column: 1 / -1; }
+  .summary-item .key { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--label); }
+  .summary-item .val {
+    font-size: 12px; color: var(--text); background: var(--bg);
+    padding: 8px 12px; border-radius: 2px; border: 1px solid var(--border);
+    word-break: break-all; max-height: 60px; overflow: auto;
+  }
+  .summary-item .val.del { color: var(--danger); border-color: rgba(232,75,75,.3); }
+  .summary-item .val.ins { color: var(--accent2); border-color: rgba(75,232,168,.3); }
+  .confirm-file-list { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; max-height: 130px; overflow-y: auto; }
+  .confirm-file-row { font-size: 11px; color: var(--muted); padding: 4px 0; border-bottom: 1px solid var(--border); word-break: break-all; }
+  .confirm-file-row:last-child { border-bottom: none; }
+  .warn-text {
+    font-size: 11px; color: var(--muted); margin-bottom: 16px;
+    padding: 10px 14px; border: 1px dashed var(--border); border-radius: 2px;
+  }
+  .warn-text strong { color: var(--accent); }
+
+  /* ── DONE ── */
+  .done-icon { font-size: 36px; margin-bottom: 10px; display: block; }
+  .done-title { font-family: 'Space Mono', monospace; font-size: 18px; color: var(--accent2); margin-bottom: 6px; }
+  .done-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .done-results { display: flex; flex-direction: column; gap: 5px; margin-bottom: 20px; max-height: 220px; overflow-y: auto; }
+  .done-row { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 10px; background: rgba(0,0,0,.3); border-radius: 2px; gap: 12px; }
+  .done-row .path { color: var(--muted); word-break: break-all; }
+  .done-row .ok  { color: var(--accent2); white-space: nowrap; }
+  .done-row .err { color: var(--danger);  white-space: nowrap; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  @media (max-width: 560px) {
+    .field-group, .confirm-summary { grid-template-columns: 1fr; }
+    .panel { padding: 20px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">file<span>.</span>replace</div>
+    <div class="subtitle">Búsqueda y sustitución en archivos</div>
+  </div>
+  <div class="step-indicator">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+</header>
+
+<div class="card">
+
+  <!-- PASO 1 -->
+  <div class="panel visible" id="panelSearch">
+    <div class="panel-title"><span class="panel-num">1</span> Parámetros de búsqueda</div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Directorio</label>
+        <input type="text" id="inputDir" placeholder="/Users/eugenio/proyectos" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field" style="position:relative">
+        <label>Nombre de archivo</label>
+        <input type="text" id="inputFile" placeholder="config.xml" autocomplete="off" spellcheck="false">
+        <div class="file-suggestions" id="fileSuggestions"></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:6px">
+      <label style="display:block;margin-bottom:8px">Alcance de la búsqueda</label>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeFlat" type="button">Solo este directorio</button>
+        <button class="mode-btn" id="modeRecursive" type="button">↳ Buscar en subdirectorios</button>
+      </div>
+    </div>
+    <div class="depth-row" id="depthRow" style="display:none">
+      <label>Profundidad máxima</label>
+      <input type="range" id="inputDepth" min="1" max="10" value="3">
+      <span class="depth-val" id="depthVal">3</span>
+      <span class="depth-note">nivel(es)</span>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Cadena a buscar</label>
+        <input type="text" id="inputSearch" placeholder="Texto, URL, token, código…" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="field-group single">
+      <div class="field">
+        <label>Cadena de reemplazo</label>
+        <input type="text" id="inputReplace" placeholder="Nuevo valor que sustituirá al anterior" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btnSearch">Buscar en archivo</button>
+      <button class="btn btn-ghost"   id="btnClear">Limpiar</button>
+    </div>
+    <div id="searchResult"></div>
+  </div>
+
+  <!-- PASO 2 -->
+  <div class="panel" id="panelConfirm">
+    <div class="panel-title"><span class="panel-num">2</span> Confirmación de reemplazo</div>
+    <div class="confirm-summary" id="confirmSummary"></div>
+    <div class="warn-text">
+      ⚠️ Se reemplazarán <strong id="confirmCount">—</strong> coincidencia(s) en
+      <strong id="confirmFiles">—</strong> archivo(s). Esta acción no se puede deshacer automáticamente.
+    </div>
+    <div class="actions">
+      <button class="btn btn-confirm" id="btnConfirm">✓ Confirmar reemplazo</button>
+      <button class="btn btn-danger"  id="btnCancel">✗ Cancelar</button>
+    </div>
+  </div>
+
+  <!-- PASO 3 -->
+  <div class="panel" id="panelDone">
+    <div class="panel-title"><span class="panel-num">3</span> Operación completada</div>
+    <div id="doneContent"></div>
+  </div>
+
+</div>
+
+<script>
+// ── ESTADO ────────────────────────────────────────────────────────────────────
+const state = {
+  search: '', replace: '',
+  hits: [],
+  selected: new Set(),
+};
+let isRecursive = false;
+
+// ── REFS ──────────────────────────────────────────────────────────────────────
+const inputDir    = document.getElementById('inputDir');
+const inputFile   = document.getElementById('inputFile');
+const inputSearch = document.getElementById('inputSearch');
+const inputReplace= document.getElementById('inputReplace');
+const btnSearch   = document.getElementById('btnSearch');
+const btnClear    = document.getElementById('btnClear');
+const btnConfirm  = document.getElementById('btnConfirm');
+const btnCancel   = document.getElementById('btnCancel');
+const searchResult= document.getElementById('searchResult');
+const fileSugs    = document.getElementById('fileSuggestions');
+const modeFlat    = document.getElementById('modeFlat');
+const modeRec     = document.getElementById('modeRecursive');
+const depthRow    = document.getElementById('depthRow');
+const inputDepth  = document.getElementById('inputDepth');
+const depthVal    = document.getElementById('depthVal');
+
+// ── MODO RECURSIVO ────────────────────────────────────────────────────────────
+modeFlat.addEventListener('click', () => {
+  isRecursive = false;
+  modeFlat.classList.add('active'); modeRec.classList.remove('active');
+  depthRow.style.display = 'none';
+});
+modeRec.addEventListener('click', () => {
+  isRecursive = true;
+  modeRec.classList.add('active'); modeFlat.classList.remove('active');
+  depthRow.style.display = 'flex';
+});
+inputDepth.addEventListener('input', () => depthVal.textContent = inputDepth.value);
+
+// ── PASOS ─────────────────────────────────────────────────────────────────────
+function showPanel(id) {
+  const panels = ['panelSearch','panelConfirm','panelDone'];
+  const idx = panels.indexOf(id);
+  panels.forEach((p, i) => {
+    document.getElementById(p).classList.toggle('visible', p === id);
+    const dot = document.getElementById('dot' + (i+1));
+    dot.classList.toggle('done',   i < idx);
+    dot.classList.toggle('active', i === idx);
+  });
+}
+
+// ── AUTOCOMPLETE ──────────────────────────────────────────────────────────────
+let dirTimer;
+inputDir.addEventListener('input', () => { clearTimeout(dirTimer); dirTimer = setTimeout(loadFiles, 400); });
+
+async function loadFiles() {
+  const dir = inputDir.value.trim();
+  if (!dir) { fileSugs.style.display = 'none'; return; }
+  try {
+    const res  = await fetch('/api/list-dir', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ directory: dir }) });
+    const data = await res.json();
+    if (data.valid && data.files.length) {
+      fileSugs.innerHTML = data.files.map(f => `<div class="file-suggestion">${esc(f)}</div>`).join('');
+      fileSugs.style.display = 'block';
+      fileSugs.querySelectorAll('.file-suggestion').forEach(el => {
+        el.addEventListener('click', () => { inputFile.value = el.textContent; fileSugs.style.display = 'none'; });
+      });
+    } else { fileSugs.style.display = 'none'; }
+  } catch { fileSugs.style.display = 'none'; }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#inputFile') && !e.target.closest('#fileSuggestions'))
+    fileSugs.style.display = 'none';
+});
+
+// ── BUSCAR ────────────────────────────────────────────────────────────────────
+btnSearch.addEventListener('click', doSearch);
+[inputDir, inputFile, inputSearch, inputReplace].forEach(el =>
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); })
+);
+
+async function doSearch() {
+  const dir     = inputDir.value.trim();
+  const file    = inputFile.value.trim();
+  const search  = inputSearch.value;
+  const replace = inputReplace.value;
+  const depth   = parseInt(inputDepth.value, 10);
+
+  if (!dir || !file || !search) {
+    showSimple('error', '⚠ Rellena directorio, nombre de archivo y cadena de búsqueda.');
+    return;
+  }
+  btnSearch.disabled = true;
+  btnSearch.innerHTML = '<span class="spinner"></span>Buscando…';
+
+  try {
+    const res  = await fetch('/api/search', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ directory: dir, filename: file, search, recursive: isRecursive, max_depth: depth })
+    });
+    const data = await res.json();
+
+    if (data.error) { showSimple('error', `✗ ${data.error}`); return; }
+
+    const hits = data.hits || [];
+    if (hits.length === 0) {
+      const n = data.files_scanned || 0;
+      showSimple('', `La cadena no se encontró en ninguno de los <strong>${n}</strong> archivo${n!==1?'s':''} escaneado${n!==1?'s':''}.`);
+      return;
+    }
+
+    state.search  = search;
+    state.replace = replace;
+    state.hits    = hits;
+    state.selected = new Set();
+
+    if (hits.length === 1) {
+      state.selected.add(0);
+      showSingleHit(hits[0], data.files_scanned);
+    } else {
+      showMultiHits(hits, data.files_scanned);
+    }
+
+  } catch(e) {
+    showSimple('error', `✗ Error de red: ${e.message}`);
+  } finally {
+    btnSearch.disabled = false;
+    btnSearch.textContent = 'Buscar en archivo';
+  }
+}
+
+// ── UN SOLO ARCHIVO ───────────────────────────────────────────────────────────
+function showSingleHit(hit, scanned) {
+  const extra = scanned > 1
+    ? `<div style="font-size:10px;color:var(--muted);margin-top:8px">Escaneados ${scanned} archivos · ${scanned-1} sin coincidencias</div>`
+    : '';
+  searchResult.innerHTML = `
+    <div class="result-box success" style="margin-top:20px">
+      <div class="result-header">
+        <span class="badge badge-ok">Encontrado</span>
+        <span class="match-count"><strong>${hit.count}</strong> coincidencia${hit.count>1?'s':''}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;word-break:break-all">📄 ${esc(hit.rel_path || hit.filepath)}</div>
+      <div class="preview-block">${renderPreview(hit.preview)}</div>
+      ${extra}
+      <div class="actions" style="margin-top:16px">
+        <button class="btn btn-primary" id="btnGo">Continuar → Reemplazar</button>
+      </div>
+    </div>`;
+  document.getElementById('btnGo').addEventListener('click', openConfirm);
+}
+
+// ── VARIOS ARCHIVOS CON SELECCIÓN MÚLTIPLE ────────────────────────────────────
+function showMultiHits(hits, scanned) {
+  const listHtml = hits.map((h, i) => `
+    <div class="file-hit-item" data-idx="${i}">
+      <div class="hit-check">✓</div>
+      <div>
+        <div class="file-hit-path">📄 ${esc(h.rel_path || h.filepath)}</div>
+        <div class="file-hit-meta">${h.count} coincidencia${h.count>1?'s':''}</div>
+        <div class="file-hit-preview">${renderPreview(h.preview)}</div>
+      </div>
+    </div>`).join('');
+
+  searchResult.innerHTML = `
+    <div class="result-box success" style="margin-top:20px">
+      <div class="result-header">
+        <span class="badge badge-ok">Encontrado</span>
+        <span class="match-count">
+          <strong>${hits.length}</strong> archivo${hits.length>1?'s':''} con coincidencias
+          <span style="color:var(--muted)"> · ${scanned} escaneados</span>
+        </span>
+      </div>
+      <div class="select-bar">
+        <span class="select-bar-label">Selección rápida</span>
+        <button class="btn btn-ghost btn-sm" id="btnSelAll">Seleccionar todos</button>
+        <button class="btn btn-ghost btn-sm" id="btnSelNone">Ninguno</button>
+        <span class="sel-count" id="selCount">0 seleccionados</span>
+      </div>
+      <div class="file-hit-list" id="hitList">${listHtml}</div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn btn-primary" id="btnGoMulti" disabled>Continuar → Reemplazar seleccionados</button>
+      </div>
+    </div>`;
+
+  // Toggle individual
+  document.querySelectorAll('.file-hit-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.idx, 10);
+      if (state.selected.has(idx)) state.selected.delete(idx);
+      else state.selected.add(idx);
+      el.classList.toggle('selected', state.selected.has(idx));
+      refreshSelUI();
+    });
+  });
+
+  document.getElementById('btnSelAll').addEventListener('click', () => {
+    hits.forEach((_, i) => state.selected.add(i));
+    document.querySelectorAll('.file-hit-item').forEach(el => el.classList.add('selected'));
+    refreshSelUI();
+  });
+
+  document.getElementById('btnSelNone').addEventListener('click', () => {
+    state.selected.clear();
+    document.querySelectorAll('.file-hit-item').forEach(el => el.classList.remove('selected'));
+    refreshSelUI();
+  });
+
+  document.getElementById('btnGoMulti').addEventListener('click', openConfirm);
+}
+
+function refreshSelUI() {
+  const n = state.selected.size;
+  const label = document.getElementById('selCount');
+  const btn   = document.getElementById('btnGoMulti');
+  if (label) label.textContent = `${n} seleccionado${n!==1?'s':''}`;
+  if (btn)   btn.disabled = n === 0;
+}
+
+function renderPreview(preview) {
+  return esc(preview).replace(/&gt;&gt;&gt;&gt;(.*?)&lt;&lt;&lt;&lt;/gs, (_, m) => `<span class="hit">${m}</span>`);
+}
+
+function showSimple(type, html) {
+  const cls = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+  searchResult.innerHTML = `<div class="result-box ${cls}" style="margin-top:20px">${html}</div>`;
+}
+
+// ── CONFIRMACIÓN ──────────────────────────────────────────────────────────────
+function openConfirm() {
+  const selHits    = [...state.selected].map(i => state.hits[i]);
+  const totalCount = selHits.reduce((s, h) => s + h.count, 0);
+
+  document.getElementById('confirmCount').textContent = totalCount;
+  document.getElementById('confirmFiles').textContent = selHits.length;
+
+  const fileListHtml = selHits.map(h =>
+    `<div class="confirm-file-row">📄 ${esc(h.rel_path || h.filepath)} <span style="color:var(--accent)">(${h.count} ocurr.)</span></div>`
+  ).join('');
+
+  document.getElementById('confirmSummary').innerHTML = `
+    <div class="summary-item">
+      <span class="key">Cadena original</span>
+      <span class="val del">${esc(state.search) || '<em>(vacía)</em>'}</span>
+    </div>
+    <div class="summary-item">
+      <span class="key">Cadena de reemplazo</span>
+      <span class="val ins">${esc(state.replace) || '<em>(vacía — se eliminará)</em>'}</span>
+    </div>
+    <div class="summary-item full">
+      <span class="key">Archivos a modificar (${selHits.length})</span>
+      <div class="confirm-file-list">${fileListHtml}</div>
+    </div>`;
+
+  showPanel('panelConfirm');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+btnCancel.addEventListener('click', () => {
+  showPanel('panelSearch');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ── REEMPLAZAR EN LOTE ────────────────────────────────────────────────────────
+btnConfirm.addEventListener('click', doReplace);
+
+async function doReplace() {
+  const selHits = [...state.selected].map(i => state.hits[i]);
+  btnConfirm.disabled = true;
+  btnConfirm.innerHTML = '<span class="spinner"></span>Procesando…';
+
+  const results = [];
+  for (const hit of selHits) {
+    try {
+      const res  = await fetch('/api/replace', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ filepath: hit.filepath, search: state.search, replace: state.replace })
+      });
+      const data = await res.json();
+      results.push({ path: hit.rel_path || hit.filepath, ...data });
+    } catch(e) {
+      results.push({ path: hit.rel_path || hit.filepath, error: e.message });
+    }
+  }
+
+  const ok  = results.filter(r => r.success);
+  const err = results.filter(r => r.error);
+  const totalReplaced = ok.reduce((s, r) => s + r.replacements, 0);
+
+  showPanel('panelDone');
+
+  const rowsHtml = results.map(r => `
+    <div class="done-row">
+      <span class="path">📄 ${esc(r.path)}</span>
+      ${r.success
+        ? `<span class="ok">✓ ${r.replacements} reemplazo${r.replacements!==1?'s':''}</span>`
+        : `<span class="err">✗ ${esc(r.error)}</span>`}
+    </div>`).join('');
+
+  document.getElementById('doneContent').innerHTML = `
+    <span class="done-icon">${err.length===0 ? '✓' : '⚠'}</span>
+    <div class="done-title" style="color:${err.length===0?'var(--accent2)':'var(--accent)'}">
+      ${err.length===0 ? 'Reemplazo completado' : `Completado con ${err.length} error${err.length>1?'es':''}`}
+    </div>
+    <div class="done-sub">${totalReplaced} sustitución${totalReplaced!==1?'es':''} en ${ok.length} archivo${ok.length!==1?'s':''}</div>
+    <div class="done-results">${rowsHtml}</div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btnNew">Nueva búsqueda</button>
+      <button class="btn btn-ghost"   id="btnReset">Reiniciar todo</button>
+    </div>`;
+
+  document.getElementById('btnNew').addEventListener('click', newSearch);
+  document.getElementById('btnReset').addEventListener('click', resetAll);
+  btnConfirm.disabled = false;
+  btnConfirm.textContent = '✓ Confirmar reemplazo';
+}
+
+// ── UTILIDADES ────────────────────────────────────────────────────────────────
+function newSearch() {
+  inputSearch.value = ''; inputReplace.value = '';
+  searchResult.innerHTML = ''; showPanel('panelSearch'); inputSearch.focus();
+}
+function resetAll() {
+  inputDir.value=''; inputFile.value=''; inputSearch.value=''; inputReplace.value='';
+  searchResult.innerHTML=''; fileSugs.style.display='none';
+  showPanel('panelSearch'); inputDir.focus();
+}
+btnClear.addEventListener('click', resetAll);
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
