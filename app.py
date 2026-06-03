@@ -7,6 +7,7 @@ import os
 from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__, static_folder="static")
+ALLOWED_REPLACE_PATHS = set()
 
 
 def find_files(directory: str, filename: str, recursive: bool, max_depth: int) -> list:
@@ -140,6 +141,8 @@ def api_search():
 
     # Filtrar solo los que tienen la cadena
     hits = [r for r in results if r.get("found")]
+    ALLOWED_REPLACE_PATHS.clear()
+    ALLOWED_REPLACE_PATHS.update(r["filepath"] for r in hits)
 
     return jsonify({
         "files_scanned": len(results),
@@ -157,6 +160,8 @@ def api_replace():
 
     if not filepath or not os.path.isfile(filepath):
         return jsonify({"error": "Ruta de archivo no válida."})
+    if filepath not in ALLOWED_REPLACE_PATHS:
+        return jsonify({"error": "Primero debes localizar este archivo desde la búsqueda de la app."})
 
     result = replace_in_file(filepath, search_str, replace_str)
     return jsonify(result)

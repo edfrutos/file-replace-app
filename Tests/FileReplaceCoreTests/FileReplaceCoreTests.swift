@@ -48,6 +48,24 @@ struct FileReplaceServiceTests {
         #expect(count == 2)
         #expect(try String(contentsOf: fileURL, encoding: .utf8) == "omega beta omega")
     }
+
+    @Test("search rejects binary files")
+    func searchRejectsBinaryFiles() throws {
+        let fixture = try TemporaryFixture()
+        try fixture.writeData("data.bin", data: Data([0x00, 0x01, 0x02, 0x03]))
+
+        let service = FileReplaceService()
+
+        #expect(throws: FileReplaceError.unsupportedFileType(fixture.url.appendingPathComponent("data.bin").path)) {
+            _ = try service.search(
+                directoryURL: fixture.url,
+                filename: "data.bin",
+                searchText: "x",
+                recursive: false,
+                maxDepth: 1
+            )
+        }
+    }
 }
 
 private struct TemporaryFixture {
@@ -66,6 +84,15 @@ private struct TemporaryFixture {
         let directoryURL = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
         try contents.write(to: fileURL, atomically: true, encoding: .utf8)
+        return fileURL
+    }
+
+    @discardableResult
+    func writeData(_ relativePath: String, data: Data) throws -> URL {
+        let fileURL = url.appendingPathComponent(relativePath)
+        let directoryURL = fileURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        try data.write(to: fileURL, options: .atomic)
         return fileURL
     }
 }

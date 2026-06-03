@@ -35,6 +35,7 @@ public enum FileReplaceError: LocalizedError, Equatable {
     case emptySearch
     case fileNotFound(String)
     case noMatches
+    case unsupportedFileType(String)
     case readFailed(String)
     case writeFailed(String)
 
@@ -52,6 +53,8 @@ public enum FileReplaceError: LocalizedError, Equatable {
             return "No se encontró ningún archivo llamado \(filename)."
         case .noMatches:
             return "No se encontraron coincidencias en los archivos localizados."
+        case .unsupportedFileType(let path):
+            return "El archivo no parece ser texto UTF-8 editable: \(path)"
         case .readFailed(let path):
             return "No se pudo leer el archivo: \(path)"
         case .writeFailed(let path):
@@ -189,11 +192,22 @@ public final class FileReplaceService {
     }
 
     private func readTextFile(_ fileURL: URL) throws -> String {
+        let data: Data
         do {
-            return try String(contentsOf: fileURL, encoding: .utf8)
+            data = try Data(contentsOf: fileURL, options: [.mappedIfSafe])
         } catch {
             throw FileReplaceError.readFailed(fileURL.path)
         }
+
+        if data.contains(0) {
+            throw FileReplaceError.unsupportedFileType(fileURL.path)
+        }
+
+        guard let content = String(data: data, encoding: .utf8) else {
+            throw FileReplaceError.unsupportedFileType(fileURL.path)
+        }
+
+        return content
     }
 
     private func relativePath(for fileURL: URL, from directoryURL: URL) -> String {

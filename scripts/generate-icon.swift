@@ -13,7 +13,6 @@ let assetsURL = rootURL
     .appendingPathComponent("AppIcon")
 let iconsetURL = assetsURL.appendingPathComponent("Replacer.iconset")
 
-try FileManager.default.createDirectory(at: resourceURL, withIntermediateDirectories: true)
 try FileManager.default.createDirectory(at: iconsetURL, withIntermediateDirectories: true)
 
 let iconFiles: [(String, CGFloat)] = [
@@ -129,7 +128,11 @@ for (filename, size) in iconFiles {
     try writePNG(drawIcon(size: size), to: iconsetURL.appendingPathComponent(filename))
 }
 
-try writePNG(drawIcon(size: 256), to: resourceURL.appendingPathComponent("AppIconPreview.png"))
+let previewURL = resourceURL.appendingPathComponent("AppIconPreview.png")
+if !FileManager.default.fileExists(atPath: previewURL.path) {
+    try FileManager.default.createDirectory(at: resourceURL, withIntermediateDirectories: true)
+    try writePNG(drawIcon(size: 256), to: previewURL)
+}
 
 let iconutil = Process()
 iconutil.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")

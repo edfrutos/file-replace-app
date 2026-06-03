@@ -26,7 +26,11 @@ final class FileReplaceViewModel: ObservableObject {
     @Published var availableFiles: [String] = []
     @Published var searchText = ""
     @Published var replacementText = ""
-    @Published var recursive = false
+    @Published var recursive = false {
+        didSet {
+            reloadAvailableFiles()
+        }
+    }
     @Published var maxDepth = 5.0
     @Published var hits: [SearchHit] = []
     @Published var selectedHitIDs = Set<SearchHit.ID>()
@@ -71,25 +75,7 @@ final class FileReplaceViewModel: ObservableObject {
         }
 
         do {
-            let resourceKeys: Set<URLResourceKey> = [.isRegularFileKey, .isHiddenKey]
-            let urls = try FileManager.default.contentsOfDirectory(
-                at: directoryURL,
-                includingPropertiesForKeys: Array(resourceKeys),
-                options: [.skipsHiddenFiles]
-            )
-
-            availableFiles = urls.compactMap { url in
-                guard
-                    let values = try? url.resourceValues(forKeys: resourceKeys),
-                    values.isRegularFile == true,
-                    values.isHidden != true
-                else {
-                    return nil
-                }
-
-                return url.lastPathComponent
-            }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            availableFiles = try listCandidateFiles(in: directoryURL, recursive: recursive)
 
             if !availableFiles.contains(filename) {
                 filename = availableFiles.first ?? ""
@@ -99,6 +85,57 @@ final class FileReplaceViewModel: ObservableObject {
             filename = ""
             statusMessage = "No se pudo leer el listado de archivos del directorio."
         }
+    }
+
+    private func listCandidateFiles(in directoryURL: URL, recursive: Bool) throws -> [String] {
+        let resourceKeys: Set<URLResourceKey> = [.isRegularFileKey, .isHiddenKey]
+        let urls: [URL]
+
+        if recursive {
+            guard let enumerator = FileManager.default.enumerator(
+                at: directoryURL,
+                includingPropertiesForKeys: Array(resourceKeys),
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            ) else {
+                return []
+            }
+
+            urls = enumerator.compactMap { $0 as? URL }
+        } else {
+            urls = try FileManager.default.contentsOfDirectory(
+                at: directoryURL,
+                includingPropertiesForKeys: Array(resourceKeys),
+                options: [.skipsHiddenFiles]
+            )
+        }
+
+        let filenames = urls.compactMap { url -> String? in
+            guard
+                let values = try? url.resourceValues(forKeys: resourceKeys),
+                values.isRegularFile == true,
+                values.isHidden != true,
+                isLikelyEditableTextFile(url)
+            else {
+                return nil
+            }
+
+            return url.lastPathComponent
+        }
+
+        return Array(Set(filenames))
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
+    private func isLikelyEditableTextFile(_ url: URL) -> Bool {
+        let blockedExtensions: Set<String> = [
+            "app", "bin", "bmp", "class", "dmg", "doc", "docx", "dylib", "exe",
+            "gif", "heic", "icns", "ico", "jar", "jpeg", "jpg", "mov", "mp3",
+            "mp4", "pdf", "pkg", "png", "pyc", "so", "sqlite", "ttf", "webp",
+            "woff", "woff2", "xls", "xlsx", "zip"
+        ]
+
+        let ext = url.pathExtension.lowercased()
+        return !blockedExtensions.contains(ext)
     }
 
     func search() {
@@ -561,7 +598,7 @@ struct FilePickerMenu: View {
             return "Este selector muestra archivos directos del directorio seleccionado."
         }
 
-        return "\(files.count) archivo(s) disponibles en el directorio seleccionado."
+        return "\(files.count) archivo(s) de texto disponibles para este modo de búsqueda."
     }
 }
 

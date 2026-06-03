@@ -46,12 +46,12 @@ Los tests crean archivos temporales y no modifican el contenido real del reposit
 ## Flujo de uso
 
 1. Selecciona un directorio con el selector nativo de macOS.
-2. Selecciona uno de los archivos listados para el directorio elegido.
+2. Selecciona uno de los archivos de texto listados para el directorio elegido.
 3. Introduce el texto a buscar y el texto de reemplazo.
-4. Activa la búsqueda recursiva si necesitas revisar subdirectorios.
+4. Activa la búsqueda recursiva si necesitas revisar subdirectorios. El selector pasará a mostrar nombres únicos de archivos de texto encontrados bajo esa carpeta.
 5. Ejecuta la búsqueda, revisa las previsualizaciones y desmarca los archivos que no quieras modificar.
 6. Pulsa `Reemplazar seleccionados` y confirma la operación.
 
 ## Seguridad
 
-La app escribe directamente sobre los archivos seleccionados y no crea copias de seguridad. Prueba primero en una carpeta descartable o con archivos bajo control de versiones.
+La app escribe directamente sobre los archivos seleccionados y no crea copias de seguridad. Rechaza binarios y archivos no UTF-8, pero conviene probar primero en una carpeta descartable o con archivos bajo control de versiones.
