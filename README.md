@@ -23,6 +23,7 @@ docs/
   TESTING.md            # Estrategia y comandos de pruebas
   CONFIGURATION.md      # Configuración y artefactos generados
   API.md                # API HTTP de la versión Flask heredada
+TESTING_HUMANO.md       # Checklist de validación manual completa
 app.py                  # Versión Flask heredada
 static/index.html       # UI web heredada
 ```
@@ -73,6 +74,7 @@ Los tests usan archivos temporales y no modifican contenido real del repositorio
 - [Arquitectura](docs/ARCHITECTURE.md)
 - [Desarrollo](docs/DEVELOPMENT.md)
 - [Pruebas](docs/TESTING.md)
+- [Testing humano](TESTING_HUMANO.md)
 - [Configuración](docs/CONFIGURATION.md)
 - [API heredada Flask](docs/API.md)
 

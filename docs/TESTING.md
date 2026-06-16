@@ -62,3 +62,18 @@ python3 -m py_compile app.py
 ```
 
 Si cambias la versión Flask y tienes `flask` instalado, haz también una comprobación manual en `http://localhost:5050` usando una carpeta descartable.
+
+## Validación Manual
+
+El checklist completo de validación humana está en [`TESTING_HUMANO.md`](../TESTING_HUMANO.md). Cubre:
+
+- app macOS nativa;
+- app empaquetada `dist/Replacer.app`;
+- búsqueda directa y recursiva;
+- reemplazo con backups;
+- cancelación;
+- rechazo de binarios/no UTF-8;
+- versión Flask heredada;
+- protección de `/api/replace`.
+
+Última revisión manual registrada: 100% completada.

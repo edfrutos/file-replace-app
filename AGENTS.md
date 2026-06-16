@@ -10,6 +10,7 @@ This repository contains a local file search/replace utility. The original imple
 - `Sources/FileReplaceCore/` contains the tested search and replace logic.
 - `Sources/FileReplaceApp/` contains the SwiftUI app shell and views.
 - `Tests/FileReplaceCoreTests/` contains Swift tests for filesystem behavior.
+- `TESTING_HUMANO.md` contains the full manual validation checklist for release-style human testing.
 - `docs/native-macos.md` documents the native app.
 - `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT.md`, `docs/TESTING.md`, `docs/CONFIGURATION.md`, and `docs/API.md` document the current architecture, workflows, testing, configuration, and legacy Flask API.
 - `scripts/build-macos-app.sh` packages the native executable as `dist/Replacer.app`.
