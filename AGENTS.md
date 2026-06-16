@@ -11,10 +11,10 @@ This repository contains a local file search/replace utility. The original imple
 - `Sources/FileReplaceApp/` contains the SwiftUI app shell and views.
 - `Tests/FileReplaceCoreTests/` contains Swift tests for filesystem behavior.
 - `docs/native-macos.md` documents the native app.
+- `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT.md`, `docs/TESTING.md`, `docs/CONFIGURATION.md`, and `docs/API.md` document the current architecture, workflows, testing, configuration, and legacy Flask API.
 - `scripts/build-macos-app.sh` packages the native executable as `dist/Replacer.app`.
 - `favicon.ico` is the browser icon.
-- `leeme.md` and `leeme.txt` are Spanish usage notes.
-- `files/` and `files.zip` appear to be packaged copies of the app; treat `app.py` and `static/` as the editable source of truth unless a release task specifically targets the packaged copy.
+- `leeme.md` contains Spanish usage notes.
 - `repomix-output.xml` is generated repository context and should not drive application behavior.
 
 ## Build, Test, and Development Commands
@@ -73,10 +73,11 @@ If adding tests for the legacy Flask app, use `pytest` and place them under a se
 
 ## Commit & Pull Request Guidelines
 
-This workspace does not expose Git history, so no existing commit convention can be inferred. Use concise imperative commits, for example `Add recursive search tests` or `Fix replacement error handling`.
+Use concise imperative commits, for example `Add recursive search tests` or `Fix replacement error handling`.
 
 Pull requests should include a short description, the commands run, any manual UI checks performed, and screenshots or screen recordings when changing `static/index.html`.
 
 ## Security & Configuration Tips
 
 This app reads and writes local files. Keep destructive actions behind explicit confirmation, preserve path validation, and test replacement changes only on disposable files.
+Replacement flows must create `.replacer-backup` files before writing modified content.

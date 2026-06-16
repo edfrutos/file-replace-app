@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Aplicación de búsqueda y reemplazo en archivos del sistema.
+Versión Flask heredada de la aplicación de búsqueda y reemplazo.
+
+La app principal del proyecto es la implementación nativa SwiftUI. Este servidor
+se conserva solo para compatibilidad local.
 """
 
 import os
+import shutil
+from typing import Optional, Tuple
 from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__, static_folder="static")
@@ -36,17 +41,45 @@ def find_files(directory: str, filename: str, recursive: bool, max_depth: int) -
     return matches
 
 
+def read_text_file(filepath: str) -> Tuple[Optional[str], Optional[str]]:
+    """Lee un archivo UTF-8 editable. Rechaza binarios y texto no UTF-8."""
+    try:
+        with open(filepath, "rb") as f:
+            data = f.read()
+    except PermissionError:
+        return None, "Sin permiso de lectura para este archivo."
+    except IsADirectoryError:
+        return None, "La ruta especificada es un directorio, no un archivo."
+    except Exception as e:
+        return None, f"Error al leer el archivo: {str(e)}"
+
+    if b"\x00" in data:
+        return None, "El archivo no parece ser texto UTF-8 editable."
+
+    try:
+        return data.decode("utf-8"), None
+    except UnicodeDecodeError:
+        return None, "El archivo no es UTF-8 válido y no se modificará para evitar corrupción."
+
+
+def backup_path_for(filepath: str) -> str:
+    """Devuelve una ruta de backup libre junto al archivo original."""
+    base = f"{filepath}.replacer-backup"
+    candidate = base
+    suffix = 1
+
+    while os.path.exists(candidate):
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+
+    return candidate
+
+
 def find_in_file(filepath: str, search_str: str) -> dict:
     """Busca una cadena en el archivo y devuelve información sobre las coincidencias."""
-    try:
-        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
-    except PermissionError:
-        return {"error": "Sin permiso de lectura para este archivo."}
-    except IsADirectoryError:
-        return {"error": "La ruta especificada es un directorio, no un archivo."}
-    except Exception as e:
-        return {"error": f"Error al leer el archivo: {str(e)}"}
+    content, error = read_text_file(filepath)
+    if error:
+        return {"error": error}
 
     count = content.count(search_str)
     if count == 0:
@@ -72,19 +105,19 @@ def find_in_file(filepath: str, search_str: str) -> dict:
 
 def replace_in_file(filepath: str, search_str: str, replace_str: str) -> dict:
     """Reemplaza todas las coincidencias de search_str por replace_str en el archivo."""
-    try:
-        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
-    except Exception as e:
-        return {"error": f"Error al leer el archivo: {str(e)}"}
+    content, error = read_text_file(filepath)
+    if error:
+        return {"error": error}
 
     count = content.count(search_str)
     if count == 0:
         return {"error": "La cadena ya no existe en el archivo (puede haber cambiado)."}
 
     new_content = content.replace(search_str, replace_str)
+    backup_path = backup_path_for(filepath)
 
     try:
+        shutil.copy2(filepath, backup_path)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(new_content)
     except PermissionError:
@@ -92,7 +125,7 @@ def replace_in_file(filepath: str, search_str: str, replace_str: str) -> dict:
     except Exception as e:
         return {"error": f"Error al escribir el archivo: {str(e)}"}
 
-    return {"success": True, "replacements": count}
+    return {"success": True, "replacements": count, "backup_path": backup_path}
 
 
 @app.route("/")
@@ -187,6 +220,7 @@ def api_list_dir():
 
 
 if __name__ == "__main__":
-    print("\n🔍 File Replace Tool")
+    print("\n🔍 File Replace Tool — versión Flask heredada")
+    print("   La app principal actual es Replacer para macOS con SwiftUI.")
     print("   Abre tu navegador en: http://localhost:5050\n")
     app.run(debug=False, port=5050)

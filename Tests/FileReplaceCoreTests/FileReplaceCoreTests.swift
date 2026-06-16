@@ -39,14 +39,15 @@ struct FileReplaceServiceTests {
             maxDepth: 1
         )
 
-        let count = try service.replace(
+        let result = try service.replace(
             in: try #require(report.hits.first),
             searchText: "alpha",
             replacementText: "omega"
         )
 
-        #expect(count == 2)
+        #expect(result.replacements == 2)
         #expect(try String(contentsOf: fileURL, encoding: .utf8) == "omega beta omega")
+        #expect(try String(contentsOf: result.backupURL, encoding: .utf8) == "alpha beta alpha")
     }
 
     @Test("search rejects binary files")
@@ -65,6 +66,30 @@ struct FileReplaceServiceTests {
                 maxDepth: 1
             )
         }
+    }
+
+    @Test("replace creates unique backup files")
+    func replaceCreatesUniqueBackupFiles() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("app.py", contents: "alpha")
+
+        let service = FileReplaceService()
+        let report = try service.search(
+            directoryURL: fixture.url,
+            filename: "app.py",
+            searchText: "alpha",
+            recursive: false,
+            maxDepth: 1
+        )
+        let hit = try #require(report.hits.first)
+
+        let first = try service.replace(in: hit, searchText: "alpha", replacementText: "beta")
+        let second = try service.replace(in: hit, searchText: "beta", replacementText: "gamma")
+
+        #expect(first.backupURL != second.backupURL)
+        #expect(try String(contentsOf: first.backupURL, encoding: .utf8) == "alpha")
+        #expect(try String(contentsOf: second.backupURL, encoding: .utf8) == "beta")
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "gamma")
     }
 }
 

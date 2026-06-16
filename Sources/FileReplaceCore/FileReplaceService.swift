@@ -28,6 +28,16 @@ public struct SearchReport: Equatable, Sendable {
     }
 }
 
+public struct ReplacementResult: Equatable, Sendable {
+    public let replacements: Int
+    public let backupURL: URL
+
+    public init(replacements: Int, backupURL: URL) {
+        self.replacements = replacements
+        self.backupURL = backupURL
+    }
+}
+
 public enum FileReplaceError: LocalizedError, Equatable {
     case missingDirectory
     case invalidDirectory(String)
@@ -37,6 +47,7 @@ public enum FileReplaceError: LocalizedError, Equatable {
     case noMatches
     case unsupportedFileType(String)
     case readFailed(String)
+    case backupFailed(String)
     case writeFailed(String)
 
     public var errorDescription: String? {
@@ -57,6 +68,8 @@ public enum FileReplaceError: LocalizedError, Equatable {
             return "El archivo no parece ser texto UTF-8 editable: \(path)"
         case .readFailed(let path):
             return "No se pudo leer el archivo: \(path)"
+        case .backupFailed(let path):
+            return "No se pudo crear una copia de seguridad del archivo: \(path)"
         case .writeFailed(let path):
             return "No se pudo escribir en el archivo: \(path)"
         }
@@ -130,7 +143,7 @@ public final class FileReplaceService {
         )
     }
 
-    public func replace(in hit: SearchHit, searchText: String, replacementText: String) throws -> Int {
+    public func replace(in hit: SearchHit, searchText: String, replacementText: String) throws -> ReplacementResult {
         guard !searchText.isEmpty else { throw FileReplaceError.emptySearch }
 
         let content = try readTextFile(hit.fileURL)
@@ -138,6 +151,7 @@ public final class FileReplaceService {
         guard count > 0 else { throw FileReplaceError.noMatches }
 
         let newContent = content.replacingOccurrences(of: searchText, with: replacementText)
+        let backupURL = try createBackup(for: hit.fileURL)
 
         do {
             try newContent.write(to: hit.fileURL, atomically: true, encoding: .utf8)
@@ -145,7 +159,7 @@ public final class FileReplaceService {
             throw FileReplaceError.writeFailed(hit.fileURL.path)
         }
 
-        return count
+        return ReplacementResult(replacements: count, backupURL: backupURL)
     }
 
     private func findFiles(
@@ -208,6 +222,26 @@ public final class FileReplaceService {
         }
 
         return content
+    }
+
+    private func createBackup(for fileURL: URL) throws -> URL {
+        let directoryURL = fileURL.deletingLastPathComponent()
+        let baseName = "\(fileURL.lastPathComponent).replacer-backup"
+        var candidate = directoryURL.appendingPathComponent(baseName)
+        var suffix = 1
+
+        while fileManager.fileExists(atPath: candidate.path) {
+            candidate = directoryURL.appendingPathComponent("\(baseName)-\(suffix)")
+            suffix += 1
+        }
+
+        do {
+            try fileManager.copyItem(at: fileURL, to: candidate)
+        } catch {
+            throw FileReplaceError.backupFailed(fileURL.path)
+        }
+
+        return candidate
     }
 
     private func relativePath(for fileURL: URL, from directoryURL: URL) -> String {

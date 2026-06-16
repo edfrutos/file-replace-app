@@ -21,6 +21,8 @@ private enum ReplacerTheme {
 
 @MainActor
 final class FileReplaceViewModel: ObservableObject {
+    private static let maxListedFiles = 500
+
     @Published var directoryURL: URL?
     @Published var filename = ""
     @Published var availableFiles: [String] = []
@@ -100,7 +102,16 @@ final class FileReplaceViewModel: ObservableObject {
                 return []
             }
 
-            urls = enumerator.compactMap { $0 as? URL }
+            var collectedURLs: [URL] = []
+            for case let url as URL in enumerator {
+                collectedURLs.append(url)
+
+                if collectedURLs.count >= Self.maxListedFiles {
+                    break
+                }
+            }
+
+            urls = collectedURLs
         } else {
             urls = try FileManager.default.contentsOfDirectory(
                 at: directoryURL,
@@ -170,7 +181,7 @@ final class FileReplaceViewModel: ObservableObject {
 
         let alert = NSAlert()
         alert.messageText = "Confirmar reemplazo"
-        alert.informativeText = "Se modificarán \(selectedHits.count) archivo(s). Esta acción escribe en disco y no crea copias de seguridad."
+        alert.informativeText = "Se modificarán \(selectedHits.count) archivo(s). Antes de escribir, Replacer creará una copia .replacer-backup junto a cada archivo."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Reemplazar")
         alert.addButton(withTitle: "Cancelar")
@@ -182,12 +193,12 @@ final class FileReplaceViewModel: ObservableObject {
 
         for hit in selectedHits {
             do {
-                let replacements = try service.replace(
+                let result = try service.replace(
                     in: hit,
                     searchText: searchText,
                     replacementText: replacementText
                 )
-                replacementLog.append("\(hit.relativePath): \(replacements) reemplazo(s)")
+                replacementLog.append("\(hit.relativePath): \(result.replacements) reemplazo(s). Backup: \(result.backupURL.lastPathComponent)")
             } catch {
                 replacementLog.append("\(hit.relativePath): \(error.localizedDescription)")
             }
@@ -598,7 +609,7 @@ struct FilePickerMenu: View {
             return "Este selector muestra archivos directos del directorio seleccionado."
         }
 
-        return "\(files.count) archivo(s) de texto disponibles para este modo de búsqueda."
+        return "\(files.count) archivo(s) de texto disponibles para este modo de búsqueda. El listado recursivo se limita para mantener la app ágil."
     }
 }
 

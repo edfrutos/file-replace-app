@@ -38,6 +38,12 @@
   .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background .3s; }
   .step-dot.active { background: var(--accent); }
   .step-dot.done   { background: var(--accent2); }
+  .legacy-banner {
+    width: 100%; max-width: 780px; margin: -18px 0 18px;
+    padding: 10px 14px; border: 1px dashed rgba(232,184,75,.45);
+    color: var(--accent); background: rgba(232,184,75,.07);
+    font-size: 11px; line-height: 1.5;
+  }
   .card { width: 100%; max-width: 780px; background: var(--surface); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
   .panel { padding: 28px 32px; border-bottom: 1px solid var(--border); display: none; animation: fadeIn .25s ease; }
   .panel.visible { display: block; }
@@ -181,6 +187,7 @@
   .done-row .path { color: var(--muted); word-break: break-all; }
   .done-row .ok  { color: var(--accent2); white-space: nowrap; }
   .done-row .err { color: var(--danger);  white-space: nowrap; }
+  .done-backup { color: var(--label); font-size: 10px; word-break: break-all; margin-top: 3px; }
 
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -208,6 +215,10 @@
     <div class="step-dot" id="dot3"></div>
   </div>
 </header>
+
+<div class="legacy-banner">
+  Versión web heredada. La app principal actual es Replacer para macOS con SwiftUI.
+</div>
 
 <div class="card">
 
@@ -267,7 +278,8 @@
     <div class="confirm-summary" id="confirmSummary"></div>
     <div class="warn-text">
       ⚠️ Se reemplazarán <strong id="confirmCount">—</strong> coincidencia(s) en
-      <strong id="confirmFiles">—</strong> archivo(s). Esta acción no se puede deshacer automáticamente.
+      <strong id="confirmFiles">—</strong> archivo(s). Se creará una copia <strong>.replacer-backup</strong>
+      junto a cada archivo antes de escribir.
     </div>
     <div class="actions">
       <button class="btn btn-confirm" id="btnConfirm">✓ Confirmar reemplazo</button>
@@ -576,7 +588,10 @@ async function doReplace() {
 
   const rowsHtml = results.map(r => `
     <div class="done-row">
-      <span class="path">📄 ${esc(r.path)}</span>
+      <span class="path">
+        📄 ${esc(r.path)}
+        ${r.backup_path ? `<div class="done-backup">Backup: ${esc(r.backup_path)}</div>` : ''}
+      </span>
       ${r.success
         ? `<span class="ok">✓ ${r.replacements} reemplazo${r.replacements!==1?'s':''}</span>`
         : `<span class="err">✗ ${esc(r.error)}</span>`}

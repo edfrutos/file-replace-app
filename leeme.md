@@ -1,14 +1,22 @@
-# Aplicación para buscar y reemplazar texto en archivos
+# Replacer
 
-Este repositorio contiene ahora una aplicación macOS nativa en SwiftUI y conserva la versión web original con Flask.
+Replacer es una aplicación local para macOS que busca y reemplaza texto en archivos UTF-8. La app principal es nativa con SwiftUI; la versión web con Flask queda como legado.
 
-## App macOS nativa
+## Uso Rápido
 
 ```bash
 swift run Replacer
 ```
 
-Documentación específica: `docs/native-macos.md`.
+Documentación principal:
+
+- `README.md`
+- `docs/native-macos.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DEVELOPMENT.md`
+- `docs/TESTING.md`
+- `docs/CONFIGURATION.md`
+- `docs/API.md`
 
 Tests:
 
@@ -16,15 +24,11 @@ Tests:
 swift test
 ```
 
+Antes de escribir cambios, la app nativa crea una copia `.replacer-backup` junto a cada archivo seleccionado.
+
 ## Versión web heredada
 
-**Estructura de archivos:**
-```
-file-replace-app/
-├── app.py
-└── static/
-    └── index.html
-```
+La versión Flask se conserva solo por compatibilidad local. La app principal actual es la versión macOS nativa. Su API está documentada en `docs/API.md`.
 
 **Para ejecutarla en tu Mac Studio:**
 
@@ -38,7 +42,7 @@ python app.py
 
 1. **Búsqueda** — Introduces el directorio (acepta `~` y rutas absolutas), el nombre del archivo (con autocompletado al listar el directorio), la cadena a buscar y la cadena de reemplazo. Al hacer clic en *Buscar*, localiza el archivo, cuenta las coincidencias y muestra un fragmento de contexto con la cadena marcada visualmente.
 
-2. **Confirmación** — Antes de tocar nada, muestra un resumen completo: ruta del archivo, número de coincidencias, cadena original (en rojo) y cadena de reemplazo (en verde). Debes confirmar explícitamente.
+2. **Confirmación** — Antes de tocar nada, muestra un resumen completo: ruta del archivo, número de coincidencias, cadena original (en rojo) y cadena de reemplazo (en verde). Debes confirmar explícitamente. Al reemplazar, crea una copia `.replacer-backup` junto al archivo original.
 
 3. **Resultado** — Informa de cuántos reemplazos se realizaron, con opción de hacer otra búsqueda en el mismo archivo o reiniciar todo.
 
