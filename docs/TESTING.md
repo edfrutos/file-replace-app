@@ -58,6 +58,7 @@ No hay workflows de GitHub Actions ni otra configuración CI versionada. Antes d
 ```bash
 swift test
 swift build --product Replacer
+scripts/build-dmg.sh
 python3 -m py_compile app.py
 ```
 

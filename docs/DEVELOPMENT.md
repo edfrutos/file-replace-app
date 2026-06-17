@@ -29,7 +29,8 @@ swift run Replacer
 | `swift run Replacer` | Compila y ejecuta la app macOS nativa en modo desarrollo. |
 | `swift test` | Ejecuta los tests del módulo `FileReplaceCore`. |
 | `swift build --product Replacer` | Compila el ejecutable nativo sin lanzar la app. |
-| `scripts/build-macos-app.sh` | Genera `dist/Replacer.app` en modo release. |
+| `scripts/build-macos-app.sh` | Genera `dist/Replacer.app` en modo release con firma ad-hoc local. |
+| `scripts/build-dmg.sh` | Genera `dist/Replacer.dmg` con la app y enlace a `/Applications`. |
 | `python app.py` | Lanza la versión Flask heredada en `http://localhost:5050`. |
 
 Para la versión Flask, usa un entorno virtual si vas a instalar dependencias:
@@ -79,5 +80,6 @@ No edites manualmente estos artefactos salvo que el objetivo sea empaquetar o in
 - `.build/`
 - `dist/`
 - `Assets/AppIcon/`
+- `dist/Replacer.dmg`
 - `__pycache__/`
 - `*.replacer-backup`

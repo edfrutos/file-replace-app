@@ -292,9 +292,22 @@ scripts/build-macos-app.sh
 Aceptación:
 
 - [x] Se crea `dist/Replacer.app`.
+- [x] El bundle se verifica con `codesign --verify --deep --strict`.
 - [x] La app abre desde Finder o terminal.
 - [x] El icono aparece correctamente.
 - [x] Repite al menos las pruebas 2, 3 y 4 con el bundle.
+
+Genera el DMG:
+
+```bash
+scripts/build-dmg.sh
+```
+
+Aceptación:
+
+- [x] Se crea `dist/Replacer.dmg`.
+- [x] El DMG se verifica correctamente.
+- [x] Al montar el DMG, contiene `Replacer.app` y un enlace a `Applications`.
 
 ## Version Flask Heredada
 

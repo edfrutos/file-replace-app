@@ -49,4 +49,6 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 </plist>
 PLIST
 
+codesign --force --deep --sign - "$APP_DIR"
+
 echo "App creada en: $APP_DIR"

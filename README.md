@@ -15,6 +15,7 @@ Tests/
   FileReplaceCoreTests/ # Tests unitarios con directorios temporales
 scripts/
   build-macos-app.sh    # Genera dist/Replacer.app
+  build-dmg.sh          # Genera dist/Replacer.dmg
   generate-icon.swift   # Genera el .icns de distribución
 docs/
   native-macos.md       # Guía funcional de la app nativa
@@ -58,7 +59,15 @@ Después abre `http://localhost:5050`.
 scripts/build-macos-app.sh
 ```
 
-El bundle se crea en `dist/Replacer.app`. El script genera el icono con `scripts/generate-icon.swift`, compila en release y monta la estructura mínima de bundle macOS.
+El bundle se crea en `dist/Replacer.app`. El script genera el icono con `scripts/generate-icon.swift`, compila en release, monta la estructura mínima de bundle macOS y aplica firma ad-hoc local.
+
+Para crear un DMG local:
+
+```bash
+scripts/build-dmg.sh
+```
+
+El DMG se crea en `dist/Replacer.dmg` e incluye `Replacer.app` y un acceso directo a `/Applications`.
 
 ## Probar
 

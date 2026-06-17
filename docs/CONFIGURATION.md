@@ -32,8 +32,11 @@ La configuración principal está en `Package.swift`:
 - Bundle identifier: `local.replacer.app`
 - Versión mostrada: `1.0.0`
 - macOS mínimo del bundle: `14.0`
+- Firma: ad-hoc local con `codesign --sign -`
 
 `scripts/generate-icon.swift` genera los PNG del iconset y el `.icns` usando `/usr/bin/iconutil`.
+
+`scripts/build-dmg.sh` crea `dist/Replacer.dmg`. El script reconstruye primero `dist/Replacer.app`, prepara una carpeta temporal con `Replacer.app` y un enlace a `/Applications`, genera el DMG comprimido con `hdiutil` y lo verifica.
 
 ## Configuración Flask Heredada
 
@@ -50,7 +53,7 @@ Flask arranca en el puerto `5050` con `debug=False`.
 `.gitignore` excluye artefactos locales y generados:
 
 - `.build/`, `.swiftpm/`, `DerivedData/`
-- `dist/`, `*.app/`, `*.zip`
+- `dist/`, `*.app/`, `*.dmg`, `*.zip`
 - `Assets/AppIcon/`
 - `.venv/`, `venv/`, `__pycache__/`
 - `PromptBase.md`

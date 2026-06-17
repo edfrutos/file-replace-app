@@ -14,6 +14,7 @@ This repository contains a local file search/replace utility. The original imple
 - `docs/native-macos.md` documents the native app.
 - `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT.md`, `docs/TESTING.md`, `docs/CONFIGURATION.md`, and `docs/API.md` document the current architecture, workflows, testing, configuration, and legacy Flask API.
 - `scripts/build-macos-app.sh` packages the native executable as `dist/Replacer.app`.
+- `scripts/build-dmg.sh` packages the native app into `dist/Replacer.dmg`.
 - `favicon.ico` is the browser icon.
 - `leeme.md` contains Spanish usage notes.
 - `repomix-output.xml` is generated repository context and should not drive application behavior.
