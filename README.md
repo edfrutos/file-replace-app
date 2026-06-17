@@ -48,6 +48,14 @@ Ejecuta la app nativa:
 swift run Replacer
 ```
 
+Para compilarla como bundle macOS, cerrar cualquier instancia anterior y abrirla:
+
+```bash
+script/build_and_run.sh
+```
+
+Usa `script/build_and_run.sh --verify` para comprobar además que el proceso arrancó. En Codex, la acción `Run` ejecuta el mismo flujo.
+
 Para usar la versión web heredada:
 
 ```bash

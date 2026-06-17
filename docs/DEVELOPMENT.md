@@ -27,6 +27,8 @@ swift run Replacer
 | Comando | Descripción |
 |---|---|
 | `swift run Replacer` | Compila y ejecuta la app macOS nativa en modo desarrollo. |
+| `script/build_and_run.sh` | Cierra la instancia anterior, genera `dist/Replacer.app` y abre el bundle. |
+| `script/build_and_run.sh --verify` | Ejecuta el flujo anterior y confirma que el proceso arrancó. |
 | `swift test` | Ejecuta los tests del módulo `FileReplaceCore`. |
 | `swift build --product Replacer` | Compila el ejecutable nativo sin lanzar la app. |
 | `scripts/build-macos-app.sh` | Genera `dist/Replacer.app` en modo release con firma ad-hoc local. |
