@@ -4,6 +4,12 @@ Replacer es una utilidad local para macOS que busca, revisa y reemplaza texto en
 
 La app principal está escrita en SwiftUI y usa un módulo core testeable para localizar archivos, contar coincidencias, rechazar contenido no editable y escribir reemplazos. La versión Flask se conserva como interfaz web heredada.
 
+## Versión publicada
+
+La versión estable actual es [Replacer 1.0.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.0.0). La release incluye un DMG para equipos Apple silicon.
+
+El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es válido para pruebas y distribución local controlada, pero macOS puede mostrar advertencias de Gatekeeper al descargarlo en otros equipos. La distribución pública sin esas advertencias requiere una firma Developer ID y notarización.
+
 ## Estructura
 
 ```text
