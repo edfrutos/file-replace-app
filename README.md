@@ -6,7 +6,7 @@ La app principal está escrita en SwiftUI y usa un módulo core testeable para l
 
 ## Versión publicada
 
-La versión preparada para distribución limitada es `1.1.0`. La release anterior es [Replacer 1.0.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.0.0).
+La versión estable actual es [Replacer 1.1.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.1.0), publicada como DMG para distribución limitada en equipos Apple silicon.
 
 El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es válido para pruebas y distribución local controlada, pero Gatekeeper lo rechaza en su validación automática al descargarlo en otros equipos. El destinatario debe verificar el origen y usar `Abrir` desde el menú contextual; macOS puede exigir además confirmar `Abrir igualmente` en Privacidad y seguridad. La distribución pública sin esas advertencias requiere una firma Developer ID y notarización.
 
