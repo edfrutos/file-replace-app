@@ -8,10 +8,13 @@ Replacer para macOS es la interfaz principal del proyecto. Permite buscar una ca
 Package.swift
 Sources/
   FileReplaceCore/
+    AppVersion.swift
     FileReplaceService.swift
   FileReplaceApp/
     FileReplaceApp.swift
     ContentView.swift
+    UpdateCenter.swift
+    Resources/Version.txt
 Tests/
   FileReplaceCoreTests/
     FileReplaceCoreTests.swift
@@ -40,6 +43,8 @@ scripts/build-macos-app.sh
 
 El script genera el icono, compila en modo release y crea `dist/Replacer.app`.
 
+La firma actual es ad-hoc y no está notarizada. En otro Mac, el destinatario debe verificar el origen del DMG, arrastrar la app a `/Applications` y usar `Abrir` desde el menú contextual la primera vez. Si Gatekeeper sigue bloqueándola, puede autorizarla desde Ajustes del Sistema > Privacidad y seguridad. Este procedimiento solo es apropiado para distribución limitada y de confianza.
+
 ## Probar
 
 ```bash
@@ -56,6 +61,12 @@ Los tests crean archivos temporales y no modifican el contenido real del reposit
 4. Activa la búsqueda recursiva si necesitas revisar subdirectorios. El selector pasará a mostrar nombres únicos de archivos de texto encontrados bajo esa carpeta.
 5. Ejecuta la búsqueda, revisa las previsualizaciones y desmarca los archivos que no quieras modificar.
 6. Pulsa `Reemplazar seleccionados` y confirma la operación. Replacer creará una copia `.replacer-backup` junto a cada archivo antes de escribir.
+
+## Actualizaciones
+
+El botón `Actualizaciones` y la acción `Replacer > Buscar actualizaciones…` muestran primero un diálogo con la versión instalada y explican que el acceso es privado. Tras confirmarlo, Replacer abre la página de releases en el navegador.
+
+Este flujo está diseñado para distribución limitada: GitHub valida la sesión y los permisos del destinatario. Replacer no almacena credenciales, no consulta la API privada automáticamente y no instala actualizaciones por su cuenta.
 
 ## Seguridad
 

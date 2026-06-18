@@ -30,13 +30,21 @@ La configuración principal está en `Package.swift`:
 - Ejecutable: `.build/release/Replacer`
 - Icono generado: `Assets/AppIcon/Replacer.icns`
 - Bundle identifier: `local.replacer.app`
-- Versión mostrada: `1.0.0`
+- Fuente de versión: `Sources/FileReplaceApp/Resources/Version.txt`
+- Versión mostrada actualmente: `1.1.0`
+- Build del bundle: `2`
 - macOS mínimo del bundle: `14.0`
 - Firma: ad-hoc local con `codesign --sign -`
 
 `scripts/generate-icon.swift` genera los PNG del iconset y el `.icns` usando `/usr/bin/iconutil`.
 
-`scripts/build-dmg.sh` crea `dist/Replacer.dmg`. El script reconstruye primero `dist/Replacer.app`, prepara una carpeta temporal con `Replacer.app` y un enlace a `/Applications`, genera el DMG comprimido con `hdiutil` y lo verifica.
+`scripts/build-dmg.sh` crea `dist/Replacer-<versión>.dmg`. El script reconstruye primero `dist/Replacer.app`, prepara una carpeta temporal con `Replacer.app` y un enlace a `/Applications`, genera el DMG comprimido con `hdiutil` y lo verifica.
+
+## Comprobación De Actualizaciones
+
+La distribución es privada y la API anónima de GitHub devuelve `404`. Por seguridad, la app no incorpora tokens ni credenciales y no realiza comprobaciones automáticas.
+
+`Buscar actualizaciones…` abre `https://github.com/edfrutos/file-replace-app/releases` en el navegador. GitHub usa allí la sesión del destinatario: solo los colaboradores autorizados podrán consultar o descargar releases. La app no descarga ni instala contenido automáticamente.
 
 ## Configuración Flask Heredada
 

@@ -3,7 +3,7 @@
 
 ## Framework Y Alcance
 
-Las pruebas nativas usan Swift Testing y viven en `Tests/FileReplaceCoreTests/`. Cubren el módulo `FileReplaceCore`, que concentra el comportamiento crítico: búsqueda de archivos, rechazo de binarios/no UTF-8, reemplazo selectivo y creación de backups.
+Las pruebas nativas usan Swift Testing y viven en `Tests/FileReplaceCoreTests/`. Cubren el módulo `FileReplaceCore`, que concentra el comportamiento crítico: búsqueda de archivos, rechazo de binarios/no UTF-8, reemplazo selectivo, creación de backups y comparación de versiones.
 
 La versión Flask heredada no tiene suite automatizada dedicada en el repositorio. Si se añaden tests Python, deberían vivir en un directorio separado y usar fixtures temporales.
 
@@ -37,6 +37,7 @@ Patrones actuales:
 - No uses rutas reales del usuario.
 - Comprueba tanto el contenido final como los backups cuando el test toque reemplazos.
 - Reproduce casos de error con archivos binarios o datos no UTF-8.
+- Comprueba tags con prefijo `v`, componentes omitidos y prereleases al probar `AppVersion`.
 
 Ejemplo de intención de test:
 

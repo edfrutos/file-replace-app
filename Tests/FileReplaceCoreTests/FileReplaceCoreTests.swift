@@ -2,6 +2,27 @@ import Foundation
 import Testing
 @testable import FileReplaceCore
 
+@Suite("AppVersion")
+struct AppVersionTests {
+    @Test("parses release tags and normalizes missing components")
+    func parsesVersions() throws {
+        #expect(try #require(AppVersion("v1.2.3")).description == "1.2.3")
+        #expect(try #require(AppVersion("2.1")).description == "2.1.0")
+        #expect(AppVersion("release-1.0") == nil)
+    }
+
+    @Test("compares stable and prerelease versions")
+    func comparesVersions() throws {
+        let current = try #require(AppVersion("1.0.0"))
+        let newer = try #require(AppVersion("1.1.0"))
+        let prerelease = try #require(AppVersion("1.1.0-beta.2"))
+
+        #expect(current < newer)
+        #expect(prerelease < newer)
+        #expect(try #require(AppVersion("1.1.0-beta.1")) < prerelease)
+    }
+}
+
 @Suite("FileReplaceService")
 struct FileReplaceServiceTests {
     @Test("search finds matching files recursively")

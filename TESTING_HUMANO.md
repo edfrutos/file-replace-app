@@ -2,7 +2,7 @@
 
 Guía de revisión manual para validar Replacer antes de hacer `git push`.
 
-Estado: validación manual completada al 100%.
+Estado: validación de búsqueda y reemplazo completada; acceso privado a actualizaciones pendiente de revisión manual.
 
 ## Objetivo
 
@@ -46,7 +46,7 @@ python3 -m py_compile app.py
 
 Aceptación:
 
-- `swift test` pasa con 4 tests.
+- `swift test` pasa con 6 tests.
 - `swift build --product Replacer` compila.
 - `python3 -m py_compile app.py` no muestra errores.
 
@@ -57,6 +57,16 @@ Arranque:
 ```bash
 swift run Replacer
 ```
+
+### 0. Acceso A Actualizaciones
+
+- [ ] La cabecera muestra el botón `Actualizaciones`.
+- [ ] El botón muestra un diálogo con la versión `1.1.0` y la limitación de acceso privado.
+- [ ] Al confirmar, abre `edfrutos/file-replace-app/releases` en el navegador.
+- [ ] `Replacer > Buscar actualizaciones…` muestra el mismo diálogo.
+- [ ] Un destinatario autorizado puede ver las releases usando su sesión de GitHub.
+- [ ] Un usuario sin permisos no recibe contenido privado y la app local sigue funcionando.
+- [ ] Replacer no solicita ni almacena tokens y no instala nada automáticamente.
 
 ### 1. Estado Inicial
 
@@ -305,7 +315,7 @@ scripts/build-dmg.sh
 
 Aceptación:
 
-- [x] Se crea `dist/Replacer.dmg`.
+- [x] Se crea `dist/Replacer-1.1.0.dmg`.
 - [x] El DMG se verifica correctamente.
 - [x] Al montar el DMG, contiene `Replacer.app` y un enlace a `Applications`.
 

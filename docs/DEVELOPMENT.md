@@ -32,8 +32,10 @@ swift run Replacer
 | `swift test` | Ejecuta los tests del módulo `FileReplaceCore`. |
 | `swift build --product Replacer` | Compila el ejecutable nativo sin lanzar la app. |
 | `scripts/build-macos-app.sh` | Genera `dist/Replacer.app` en modo release con firma ad-hoc local. |
-| `scripts/build-dmg.sh` | Genera `dist/Replacer.dmg` con la app y enlace a `/Applications`. |
+| `scripts/build-dmg.sh` | Genera `dist/Replacer-<versión>.dmg` con la app y enlace a `/Applications`. |
 | `python app.py` | Lanza la versión Flask heredada en `http://localhost:5050`. |
+
+La versión de la app se define una sola vez en `Sources/FileReplaceApp/Resources/Version.txt`. El empaquetado copia ese valor a `CFBundleShortVersionString`, lo muestra en la interfaz y lo incorpora al nombre del DMG.
 
 Para la versión Flask, usa un entorno virtual si vas a instalar dependencias:
 
@@ -49,8 +51,9 @@ python app.py
 Swift:
 
 - Mantén la lógica de filesystem en `Sources/FileReplaceCore/`.
-- Mantén la UI y el estado de pantalla en `Sources/FileReplaceApp/`.
+- Mantén la UI, el estado de pantalla y las integraciones de macOS en `Sources/FileReplaceApp/`.
 - Añade tests en `Tests/FileReplaceCoreTests/` cuando cambie el comportamiento de búsqueda, lectura, backups o reemplazo.
+- Añade tests de `AppVersion` cuando cambien las reglas de versiones o tags admitidos.
 
 Python:
 
@@ -82,6 +85,6 @@ No edites manualmente estos artefactos salvo que el objetivo sea empaquetar o in
 - `.build/`
 - `dist/`
 - `Assets/AppIcon/`
-- `dist/Replacer.dmg`
+- `dist/Replacer-*.dmg`
 - `__pycache__/`
 - `*.replacer-backup`

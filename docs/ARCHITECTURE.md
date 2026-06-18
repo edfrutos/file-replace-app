@@ -12,6 +12,8 @@ graph TD
     User["Usuario macOS"] --> SwiftUI["FileReplaceApp SwiftUI"]
     SwiftUI --> Core["FileReplaceCore"]
     Core --> FS["Filesystem local"]
+    SwiftUI --> Updates["UpdateCenter"]
+    Updates --> GitHub["Página privada de GitHub Releases"]
     UserWeb["Usuario navegador"] --> LegacyUI["static/index.html"]
     LegacyUI --> Flask["app.py Flask heredado"]
     Flask --> FS
@@ -29,6 +31,8 @@ graph TD
 6. Al reemplazar, el core crea primero una copia `.replacer-backup` junto al archivo original.
 7. Si el backup se crea correctamente, el core escribe el nuevo contenido con codificación UTF-8.
 
+En distribución limitada no se incorporan tokens ni se consulta automáticamente la API privada de GitHub. `UpdateCenter` abre bajo petición la página de releases en el navegador, donde GitHub aplica la sesión y los permisos del destinatario. La acción está disponible en la cabecera y en el menú de la aplicación.
+
 La versión Flask sigue un flujo equivalente para `/api/search` y `/api/replace`, con autorización de reemplazo basada en los resultados encontrados en la sesión del proceso.
 
 ## Abstracciones Clave
@@ -40,6 +44,8 @@ La versión Flask sigue un flujo equivalente para `/api/search` y `/api/replace`
 | `SearchReport` | `Sources/FileReplaceCore/FileReplaceService.swift` | Resume archivos revisados, hits y archivos sin coincidencias. |
 | `ReplacementResult` | `Sources/FileReplaceCore/FileReplaceService.swift` | Devuelve número de reemplazos y ruta del backup creado. |
 | `FileReplaceViewModel` | `Sources/FileReplaceApp/ContentView.swift` | Estado y acciones de la UI SwiftUI. |
+| `AppVersion` | `Sources/FileReplaceCore/AppVersion.swift` | Analiza y compara versiones estables y prereleases. |
+| `UpdateCenter` | `Sources/FileReplaceApp/UpdateCenter.swift` | Abre la página privada de releases sin almacenar credenciales. |
 | `read_text_file` | `app.py` | Lectura estricta UTF-8 de la versión Flask heredada. |
 | `replace_in_file` | `app.py` | Reemplazo heredado con backup previo. |
 
@@ -49,7 +55,7 @@ La versión Flask sigue un flujo equivalente para `/api/search` y `/api/replace`
 Package.swift
 Sources/
   FileReplaceCore/      # Lógica reutilizable y testeable de búsqueda/reemplazo
-  FileReplaceApp/       # App macOS SwiftUI y recursos empaquetados
+  FileReplaceApp/       # App macOS SwiftUI, acceso a releases y recursos
 Tests/
   FileReplaceCoreTests/ # Tests de comportamiento del core con fixtures temporales
 scripts/

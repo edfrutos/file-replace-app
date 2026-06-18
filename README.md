@@ -1,14 +1,14 @@
 # Replacer
 
-Replacer es una utilidad local para macOS que busca, revisa y reemplaza texto en archivos UTF-8 con confirmación explícita y copias de seguridad automáticas.
+Replacer es una utilidad local para macOS que busca, revisa y reemplaza texto en archivos UTF-8 con confirmación explícita y copias de seguridad automáticas. La app permite revisar manualmente las releases disponibles en GitHub.
 
 La app principal está escrita en SwiftUI y usa un módulo core testeable para localizar archivos, contar coincidencias, rechazar contenido no editable y escribir reemplazos. La versión Flask se conserva como interfaz web heredada.
 
 ## Versión publicada
 
-La versión estable actual es [Replacer 1.0.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.0.0). La release incluye un DMG para equipos Apple silicon.
+La versión preparada para distribución limitada es `1.1.0`. La release anterior es [Replacer 1.0.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.0.0).
 
-El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es válido para pruebas y distribución local controlada, pero macOS puede mostrar advertencias de Gatekeeper al descargarlo en otros equipos. La distribución pública sin esas advertencias requiere una firma Developer ID y notarización.
+El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es válido para pruebas y distribución local controlada, pero Gatekeeper lo rechaza en su validación automática al descargarlo en otros equipos. El destinatario debe verificar el origen y usar `Abrir` desde el menú contextual; macOS puede exigir además confirmar `Abrir igualmente` en Privacidad y seguridad. La distribución pública sin esas advertencias requiere una firma Developer ID y notarización.
 
 ## Estructura
 
@@ -21,7 +21,7 @@ Tests/
   FileReplaceCoreTests/ # Tests unitarios con directorios temporales
 scripts/
   build-macos-app.sh    # Genera dist/Replacer.app
-  build-dmg.sh          # Genera dist/Replacer.dmg
+  build-dmg.sh          # Genera dist/Replacer-<versión>.dmg
   generate-icon.swift   # Genera el .icns de distribución
 docs/
   native-macos.md       # Guía funcional de la app nativa
@@ -81,7 +81,11 @@ Para crear un DMG local:
 scripts/build-dmg.sh
 ```
 
-El DMG se crea en `dist/Replacer.dmg` e incluye `Replacer.app` y un acceso directo a `/Applications`.
+El DMG se crea como `dist/Replacer-<versión>.dmg` e incluye `Replacer.app` y un acceso directo a `/Applications`.
+
+Para distribución limitada, comparte también la suma SHA-256 por un canal independiente para que el destinatario pueda verificar el archivo antes de abrirlo.
+
+La versión del bundle se lee de `Sources/FileReplaceApp/Resources/Version.txt`. Actualiza ese único archivo antes de empaquetar una nueva release.
 
 ## Probar
 

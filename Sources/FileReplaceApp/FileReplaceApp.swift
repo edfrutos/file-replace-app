@@ -10,6 +10,11 @@ struct FileReplaceApp: App {
         .windowStyle(.titleBar)
         .commands {
             CommandGroup(replacing: .newItem) { }
+            CommandGroup(after: .appInfo) {
+                Button("Buscar actualizaciones…") {
+                    UpdateCenter.presentUpdateOptions()
+                }
+            }
         }
     }
 }

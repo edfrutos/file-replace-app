@@ -302,6 +302,8 @@ struct ContentView: View {
                 ProgressView()
                     .controlSize(.small)
             }
+
+            UpdatesButton()
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
@@ -358,6 +360,19 @@ struct ContentView: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
         .background(.white.opacity(0.54))
+    }
+}
+
+struct UpdatesButton: View {
+    var body: some View {
+        Button {
+            UpdateCenter.presentUpdateOptions()
+        } label: {
+            Label("Actualizaciones", systemImage: "arrow.up.right.square")
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .help("Versión \(ReplacerVersion.current.description). Consultar releases privadas")
     }
 }
 

@@ -3,9 +3,11 @@ set -euo pipefail
 
 APP_NAME="Replacer"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION_FILE="$ROOT_DIR/Sources/FileReplaceApp/Resources/Version.txt"
+APP_VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")"
 DIST_DIR="$ROOT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
-DMG_PATH="$DIST_DIR/$APP_NAME.dmg"
+DMG_PATH="$DIST_DIR/$APP_NAME-$APP_VERSION.dmg"
 STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/replacer-dmg.XXXXXX")"
 
 cleanup() {
@@ -14,6 +16,11 @@ cleanup() {
 trap cleanup EXIT
 
 cd "$ROOT_DIR"
+
+if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+    echo "Versión no válida en $VERSION_FILE: $APP_VERSION" >&2
+    exit 1
+fi
 
 "$ROOT_DIR/scripts/build-macos-app.sh"
 
