@@ -46,7 +46,7 @@ python3 -m py_compile app.py
 
 Aceptación:
 
-- `swift test` pasa con 6 tests.
+- `swift test` pasa con 10 tests.
 - `swift build --product Replacer` compila.
 - `python3 -m py_compile app.py` no muestra errores.
 

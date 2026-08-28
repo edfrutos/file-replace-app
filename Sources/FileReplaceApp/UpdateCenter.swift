@@ -3,16 +3,7 @@ import FileReplaceCore
 import Foundation
 
 enum ReplacerVersion {
-    static let current: AppVersion = {
-        guard
-            let url = Bundle.module.url(forResource: "Version", withExtension: "txt"),
-            let value = try? String(contentsOf: url, encoding: .utf8),
-            let version = AppVersion(value)
-        else {
-            preconditionFailure("No se pudo leer Resources/Version.txt")
-        }
-        return version
-    }()
+    static let current: AppVersion = ReplacerBuildInfo.appVersion
 }
 
 @MainActor

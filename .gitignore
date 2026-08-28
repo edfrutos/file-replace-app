@@ -55,3 +55,8 @@ secrets.*
 *.log
 tmp/
 temp/
+
+# Replacer backups and macOS custom folder icon
+*.replacer-backup
+*.replacer-backup-*
+Icon?

@@ -19,20 +19,36 @@ private enum ReplacerTheme {
     )
 }
 
+/// Marca visual de la app dibujada en código (sin depender de recursos del bundle).
+struct AppGlyph: View {
+    var size: CGFloat
+    var cornerRadius: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(ReplacerTheme.accentGradient)
+            .frame(width: size, height: size)
+            .overlay(
+                Image(systemName: "arrow.left.arrow.right")
+                    .font(.system(size: size * 0.44, weight: .bold))
+                    .foregroundStyle(.white)
+            )
+    }
+}
+
+private struct SearchOutcome: Sendable {
+    var report: SearchReport?
+    var errorMessage: String?
+}
+
 @MainActor
 final class FileReplaceViewModel: ObservableObject {
-    private static let maxListedFiles = 500
-
     @Published var directoryURL: URL?
-    @Published var filename = ""
-    @Published var availableFiles: [String] = []
+    @Published var directoryPathInput = ""
+    @Published var namePattern = ""
     @Published var searchText = ""
     @Published var replacementText = ""
-    @Published var recursive = false {
-        didSet {
-            reloadAvailableFiles()
-        }
-    }
+    @Published var recursive = false
     @Published var maxDepth = 5.0
     @Published var hits: [SearchHit] = []
     @Published var selectedHitIDs = Set<SearchHit.ID>()
@@ -48,7 +64,7 @@ final class FileReplaceViewModel: ObservableObject {
     }
 
     var canSearch: Bool {
-        directoryURL != nil && !filename.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !searchText.isEmpty
+        directoryURL != nil && !searchText.isEmpty
     }
 
     var canReplace: Bool {
@@ -56,124 +72,109 @@ final class FileReplaceViewModel: ObservableObject {
     }
 
     func chooseDirectory() {
+        // Al ejecutar como binario de SwiftPM (`swift run`) la app puede no estar
+        // activa; sin esto el panel puede abrirse detrás de la ventana.
+        NSApp.activate()
+
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
         panel.prompt = "Seleccionar"
+        panel.message = "Elige la carpeta donde buscar"
 
-        if panel.runModal() == .OK {
-            directoryURL = panel.url
-            reloadAvailableFiles()
-            statusMessage = "Directorio seleccionado: \(panel.url?.path ?? "")"
+        guard panel.runModal() == .OK, let url = panel.url else {
+            statusMessage = "Selección de carpeta cancelada o no disponible. Usa el campo de ruta."
+            return
         }
+        applyDirectory(url)
     }
 
-    func reloadAvailableFiles() {
-        guard let directoryURL else {
-            availableFiles = []
-            filename = ""
+    /// Alternativa al panel nativo: fija el directorio a partir de una ruta escrita
+    /// o pegada. Imprescindible cuando el panel no está disponible (`swift run`).
+    func applyTypedDirectory() {
+        let trimmed = directoryPathInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            statusMessage = "Escribe una ruta de directorio en el campo."
             return
         }
 
-        do {
-            availableFiles = try listCandidateFiles(in: directoryURL, recursive: recursive)
+        let expanded = (trimmed as NSString).expandingTildeInPath
+        let url = URL(fileURLWithPath: expanded, isDirectory: true)
 
-            if !availableFiles.contains(filename) {
-                filename = availableFiles.first ?? ""
-            }
-        } catch {
-            availableFiles = []
-            filename = ""
-            statusMessage = "No se pudo leer el listado de archivos del directorio."
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            statusMessage = "La ruta no existe o no es un directorio: \(expanded)"
+            return
         }
+
+        applyDirectory(url)
     }
 
-    private func listCandidateFiles(in directoryURL: URL, recursive: Bool) throws -> [String] {
-        let resourceKeys: Set<URLResourceKey> = [.isRegularFileKey, .isHiddenKey]
-        let urls: [URL]
-
-        if recursive {
-            guard let enumerator = FileManager.default.enumerator(
-                at: directoryURL,
-                includingPropertiesForKeys: Array(resourceKeys),
-                options: [.skipsHiddenFiles, .skipsPackageDescendants]
-            ) else {
-                return []
-            }
-
-            var collectedURLs: [URL] = []
-            for case let url as URL in enumerator {
-                collectedURLs.append(url)
-
-                if collectedURLs.count >= Self.maxListedFiles {
-                    break
-                }
-            }
-
-            urls = collectedURLs
-        } else {
-            urls = try FileManager.default.contentsOfDirectory(
-                at: directoryURL,
-                includingPropertiesForKeys: Array(resourceKeys),
-                options: [.skipsHiddenFiles]
-            )
-        }
-
-        let filenames = urls.compactMap { url -> String? in
-            guard
-                let values = try? url.resourceValues(forKeys: resourceKeys),
-                values.isRegularFile == true,
-                values.isHidden != true,
-                isLikelyEditableTextFile(url)
-            else {
-                return nil
-            }
-
-            return url.lastPathComponent
-        }
-
-        return Array(Set(filenames))
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-    }
-
-    private func isLikelyEditableTextFile(_ url: URL) -> Bool {
-        let blockedExtensions: Set<String> = [
-            "app", "bin", "bmp", "class", "dmg", "doc", "docx", "dylib", "exe",
-            "gif", "heic", "icns", "ico", "jar", "jpeg", "jpg", "mov", "mp3",
-            "mp4", "pdf", "pkg", "png", "pyc", "so", "sqlite", "ttf", "webp",
-            "woff", "woff2", "xls", "xlsx", "zip"
-        ]
-
-        let ext = url.pathExtension.lowercased()
-        return !blockedExtensions.contains(ext)
+    private func applyDirectory(_ url: URL) {
+        directoryURL = url
+        directoryPathInput = url.path
+        hits = []
+        selectedHitIDs = []
+        lastReport = nil
+        replacementLog = []
+        statusMessage = "Directorio: \(url.path). Escribe el texto a buscar y pulsa «Buscar coincidencias»."
     }
 
     func search() {
+        let dir = directoryURL
+        let pattern = namePattern
+        let text = searchText
+        let rec = recursive
+        let depth = Int(maxDepth)
+        let service = self.service
+
         isWorking = true
         replacementLog = []
+        hits = []
+        selectedHitIDs = []
+        statusMessage = "Buscando…"
 
-        do {
-            let report = try service.search(
-                directoryURL: directoryURL,
-                filename: filename,
-                searchText: searchText,
-                recursive: recursive,
-                maxDepth: Int(maxDepth)
-            )
+        Task {
+            let outcome: SearchOutcome = await Task.detached(priority: .userInitiated) {
+                do {
+                    let report = try service.search(
+                        directoryURL: dir,
+                        namePattern: pattern,
+                        searchText: text,
+                        recursive: rec,
+                        maxDepth: depth
+                    )
+                    return SearchOutcome(report: report, errorMessage: nil)
+                } catch {
+                    return SearchOutcome(report: nil, errorMessage: error.localizedDescription)
+                }
+            }.value
 
-            lastReport = report
-            hits = report.hits
-            selectedHitIDs = Set(report.hits.map(\.id))
-            statusMessage = "\(report.hits.count) archivo(s) con coincidencias. \(report.filesScanned) archivo(s) revisado(s)."
-        } catch {
-            hits = []
-            selectedHitIDs = []
-            lastReport = nil
-            statusMessage = error.localizedDescription
+            if let report = outcome.report {
+                lastReport = report
+                hits = report.hits
+                selectedHitIDs = []
+
+                var message = "\(report.hits.count) archivo(s) con coincidencias sobre \(report.filesScanned) revisado(s). Revisa y marca los archivos que quieras reemplazar."
+                if !report.skippedFiles.isEmpty {
+                    message += " \(report.skippedFiles.count) omitido(s) (binario, no UTF-8 o demasiado grande)."
+                }
+                if report.reachedResultLimit {
+                    message += " Se alcanzó el límite de resultados; acota con un filtro de nombre o menos profundidad."
+                }
+                statusMessage = message
+            } else {
+                let detail = outcome.errorMessage ?? "Error desconocido en la búsqueda."
+                hits = []
+                selectedHitIDs = []
+                lastReport = nil
+                statusMessage = detail
+            }
+
+            isWorking = false
         }
-
-        isWorking = false
     }
 
     func replaceSelected() {
@@ -188,24 +189,33 @@ final class FileReplaceViewModel: ObservableObject {
 
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
+        let targets = selectedHits
+        let needle = searchText
+        let replacement = replacementText
+        let service = self.service
+
         isWorking = true
         replacementLog = []
+        statusMessage = "Reemplazando en \(targets.count) archivo(s)…"
 
-        for hit in selectedHits {
-            do {
-                let result = try service.replace(
-                    in: hit,
-                    searchText: searchText,
-                    replacementText: replacementText
-                )
-                replacementLog.append("\(hit.relativePath): \(result.replacements) reemplazo(s). Backup: \(result.backupURL.lastPathComponent)")
-            } catch {
-                replacementLog.append("\(hit.relativePath): \(error.localizedDescription)")
-            }
+        Task {
+            let lines: [String] = await Task.detached(priority: .userInitiated) {
+                var out: [String] = []
+                for hit in targets {
+                    do {
+                        let result = try service.replace(in: hit, searchText: needle, replacementText: replacement)
+                        out.append("\(hit.relativePath): \(result.replacements) reemplazo(s). Backup: \(result.backupURL.lastPathComponent)")
+                    } catch {
+                        out.append("\(hit.relativePath): \(error.localizedDescription)")
+                    }
+                }
+                return out
+            }.value
+
+            replacementLog = lines
+            statusMessage = "Reemplazo finalizado en \(targets.count) archivo(s)."
+            isWorking = false
         }
-
-        statusMessage = "Reemplazo finalizado en \(selectedHits.count) archivo(s)."
-        isWorking = false
     }
 
     func toggleSelection(for hit: SearchHit) {
@@ -229,38 +239,46 @@ struct ContentView: View {
     @StateObject private var viewModel = FileReplaceViewModel()
 
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             SidebarView(viewModel: viewModel)
-                .navigationTitle("Replacer")
-                .frame(minWidth: 380)
+                .frame(width: 400)
+                .frame(maxHeight: .infinity)
                 .background(sidebarBackground)
-        } detail: {
-            ZStack {
-                ReplacerTheme.paper.ignoresSafeArea()
-                VStack(alignment: .leading, spacing: 0) {
-                    header
 
-                    if viewModel.hits.isEmpty {
-                        emptyState
-                    } else {
-                        resultsToolbar
-                        ScrollView {
-                            LazyVStack(spacing: 12) {
-                                ForEach(viewModel.hits) { hit in
-                                    HitRow(
-                                        hit: hit,
-                                        isSelected: viewModel.selectedHitIDs.contains(hit.id),
-                                        onToggle: { viewModel.toggleSelection(for: hit) }
-                                    )
-                                }
+            Divider()
+
+            detailPane
+                .frame(minWidth: 460, maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(minWidth: 860, minHeight: 620)
+    }
+
+    private var detailPane: some View {
+        ZStack {
+            ReplacerTheme.paper.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 0) {
+                header
+
+                if viewModel.hits.isEmpty {
+                    emptyState
+                } else {
+                    resultsToolbar
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(viewModel.hits) { hit in
+                                HitRow(
+                                    hit: hit,
+                                    isSelected: viewModel.selectedHitIDs.contains(hit.id),
+                                    onToggle: { viewModel.toggleSelection(for: hit) }
+                                )
                             }
-                            .padding(22)
                         }
+                        .padding(22)
                     }
+                }
 
-                    if !viewModel.replacementLog.isEmpty {
-                        ReplacementLogView(lines: viewModel.replacementLog)
-                    }
+                if !viewModel.replacementLog.isEmpty {
+                    ReplacementLogView(lines: viewModel.replacementLog)
                 }
             }
         }
@@ -280,10 +298,7 @@ struct ContentView: View {
 
     private var header: some View {
         HStack(spacing: 16) {
-            Image("AppIconPreview", bundle: .module)
-                .resizable()
-                .frame(width: 54, height: 54)
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            AppGlyph(size: 54, cornerRadius: 13)
                 .shadow(color: ReplacerTheme.blue.opacity(0.25), radius: 14, y: 7)
 
             VStack(alignment: .leading, spacing: 5) {
@@ -330,7 +345,7 @@ struct ContentView: View {
                 Text("Listo para encontrar cambios")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundStyle(ReplacerTheme.ink)
-                Text("Elige un directorio, selecciona un archivo del listado y revisa cada coincidencia antes de reemplazar.")
+                Text("Elige un directorio, ajusta el filtro de nombre opcional y revisa cada coincidencia antes de reemplazar.")
                     .font(.title3)
                     .foregroundStyle(ReplacerTheme.muted)
                     .multilineTextAlignment(.center)
@@ -393,6 +408,23 @@ struct SidebarView: View {
                     }
                     .buttonStyle(SoftButtonStyle())
 
+                    HStack(spacing: 8) {
+                        TextField("~/ruta/al/proyecto", text: $viewModel.directoryPathInput)
+                            .textFieldStyle(.roundedBorder)
+                            .autocorrectionDisabled(true)
+                            .font(.callout)
+                            .onSubmit { viewModel.applyTypedDirectory() }
+
+                        Button("Usar") {
+                            viewModel.applyTypedDirectory()
+                        }
+                        .buttonStyle(SoftButtonStyle())
+                    }
+
+                    Text("Escribe o pega una ruta y pulsa «Usar» (o Intro). También puedes usar el botón de arriba.")
+                        .font(.caption2)
+                        .foregroundStyle(ReplacerTheme.muted)
+
                     Text(viewModel.directoryURL?.path ?? "Sin directorio seleccionado")
                         .font(.caption)
                         .foregroundStyle(ReplacerTheme.muted)
@@ -405,12 +437,8 @@ struct SidebarView: View {
                 }
 
                 ControlGroupBox(title: "Búsqueda", icon: "text.viewfinder") {
-                    LabeledInput(title: "Archivo del directorio") {
-                        FilePickerMenu(
-                            files: viewModel.availableFiles,
-                            selection: $viewModel.filename,
-                            hasDirectory: viewModel.directoryURL != nil
-                        )
+                    LabeledInput(title: "Filtro de nombre (opcional)") {
+                        NamePatternField(text: $viewModel.namePattern)
                     }
 
                     LabeledInput(title: "Texto a buscar") {
@@ -476,10 +504,7 @@ struct SidebarView: View {
 
     private var brandHeader: some View {
         HStack(spacing: 14) {
-            Image("AppIconPreview", bundle: .module)
-                .resizable()
-                .frame(width: 70, height: 70)
-                .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+            AppGlyph(size: 70, cornerRadius: 17)
                 .shadow(color: ReplacerTheme.teal.opacity(0.22), radius: 16, y: 8)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -538,93 +563,20 @@ struct LabeledInput<Content: View>: View {
     }
 }
 
-struct InputChrome: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(ReplacerTheme.border, lineWidth: 1)
-            )
-    }
-}
-
-struct FilePickerMenu: View {
-    let files: [String]
-    @Binding var selection: String
-    let hasDirectory: Bool
+struct NamePatternField: View {
+    @Binding var text: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Menu {
-                if files.isEmpty {
-                    Text(hasDirectory ? "No hay archivos en este directorio" : "Selecciona primero un directorio")
-                } else {
-                    ForEach(files, id: \.self) { file in
-                        Button {
-                            selection = file
-                        } label: {
-                            if selection == file {
-                                Label(file, systemImage: "checkmark")
-                            } else {
-                                Text(file)
-                            }
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: files.isEmpty ? "doc.badge.questionmark" : "doc.text")
-                        .foregroundStyle(files.isEmpty ? ReplacerTheme.muted : ReplacerTheme.blue)
+            TextField("*.txt, config*, .env*", text: $text)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled(true)
+                .font(.callout)
 
-                    Text(selectionLabel)
-                        .foregroundStyle(files.isEmpty ? ReplacerTheme.muted : ReplacerTheme.ink)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(ReplacerTheme.muted)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 11)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(ReplacerTheme.border, lineWidth: 1)
-                )
-            }
-            .disabled(files.isEmpty)
-
-            Text(helperText)
+            Text("Patrón glob sobre el nombre del archivo. Vacío = todos los archivos del alcance elegido.")
                 .font(.caption2)
                 .foregroundStyle(ReplacerTheme.muted)
         }
-    }
-
-    private var selectionLabel: String {
-        if !selection.isEmpty {
-            return selection
-        }
-
-        return hasDirectory ? "Sin archivos disponibles" : "Selecciona un directorio"
-    }
-
-    private var helperText: String {
-        if !hasDirectory {
-            return "El listado aparecerá después de elegir una carpeta."
-        }
-
-        if files.isEmpty {
-            return "Este selector muestra archivos directos del directorio seleccionado."
-        }
-
-        return "\(files.count) archivo(s) de texto disponibles para este modo de búsqueda. El listado recursivo se limita para mantener la app ágil."
     }
 }
 
@@ -634,25 +586,77 @@ struct PromptTextEditor: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            TextEditor(text: $text)
-                .font(.body)
-                .scrollContentBackground(.hidden)
-                .padding(8)
+            PlainNSTextEditor(text: $text)
 
             if text.isEmpty {
                 Text(prompt)
+                    .font(.body)
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 16)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 10)
                     .allowsHitTesting(false)
             }
         }
         .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .stroke(ReplacerTheme.border, lineWidth: 1)
+                .allowsHitTesting(false)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+    }
+}
+
+/// Editor multilínea sobre `NSTextView` con TODA la sustitución tipográfica
+/// desactivada (comillas curvas, guiones largos, reemplazo de texto, autocorrección).
+/// Imprescindible para una herramienta de búsqueda/reemplazo de cadena exacta.
+struct PlainNSTextEditor: NSViewRepresentable {
+    @Binding var text: String
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSTextView.scrollableTextView()
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.hasVerticalScroller = true
+
+        guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
+        textView.delegate = context.coordinator
+        textView.isRichText = false
+        textView.allowsUndo = true
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
+        textView.isAutomaticSpellingCorrectionEnabled = false
+        textView.isAutomaticDataDetectionEnabled = false
+        textView.isAutomaticLinkDetectionEnabled = false
+        textView.smartInsertDeleteEnabled = false
+        textView.isContinuousSpellCheckingEnabled = false
+        textView.isGrammarCheckingEnabled = false
+        textView.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+        textView.textContainerInset = NSSize(width: 6, height: 8)
+        textView.drawsBackground = false
+        textView.string = text
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let textView = nsView.documentView as? NSTextView else { return }
+        if textView.string != text {
+            textView.string = text
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(text: $text) }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        private let text: Binding<String>
+
+        init(text: Binding<String>) { self.text = text }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            text.wrappedValue = textView.string
+        }
     }
 }
 

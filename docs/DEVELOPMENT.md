@@ -35,7 +35,7 @@ swift run Replacer
 | `scripts/build-dmg.sh` | Genera `dist/Replacer-<versión>.dmg` con la app y enlace a `/Applications`. |
 | `python app.py` | Lanza la versión Flask heredada en `http://localhost:5050`. |
 
-La versión de la app se define una sola vez en `Sources/FileReplaceApp/Resources/Version.txt`. El empaquetado copia ese valor a `CFBundleShortVersionString`, lo muestra en la interfaz y lo incorpora al nombre del DMG.
+La versión de la app se define una sola vez en `Sources/FileReplaceCore/ReplacerBuildInfo.swift` (`ReplacerBuildInfo.version`). El empaquetado copia ese valor a `CFBundleShortVersionString`, la app lo muestra en la interfaz y el script lo incorpora al nombre del DMG. La app ya no depende de `Bundle.module` ni de recursos empaquetados.
 
 Para la versión Flask, usa un entorno virtual si vas a instalar dependencias:
 

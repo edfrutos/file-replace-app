@@ -25,36 +25,94 @@ struct AppVersionTests {
 
 @Suite("FileReplaceService")
 struct FileReplaceServiceTests {
-    @Test("search finds matching files recursively")
-    func searchFindsMatchesRecursively() throws {
+    @Test("search without a name pattern scans every readable file in scope")
+    func searchScansAllFiles() throws {
         let fixture = try TemporaryFixture()
-        try fixture.write("root/app.py", contents: "hello root")
-        try fixture.write("nested/app.py", contents: "hello nested hello")
-        try fixture.write("nested/other.py", contents: "hello ignored")
+        try fixture.write("notes.txt", contents: "hello here")
+        try fixture.write("src/main.swift", contents: "print(\"hello\")")
+        try fixture.write("src/readme.md", contents: "nothing to see")
+        try fixture.writeData("assets/logo.bin", data: Data([0x00, 0x01, 0x02]))
 
         let service = FileReplaceService()
         let report = try service.search(
             directoryURL: fixture.url,
-            filename: "app.py",
+            namePattern: "",
             searchText: "hello",
             recursive: true,
-            maxDepth: 3
+            maxDepth: 5
         )
 
-        #expect(report.filesScanned == 2)
         #expect(report.hits.count == 2)
-        #expect(report.hits.map(\.count).sorted() == [1, 2])
+        #expect(report.hits.map(\.relativePath).sorted() == ["notes.txt", "src/main.swift"])
+        #expect(report.filesWithoutMatch.contains { $0.hasSuffix("src/readme.md") })
+        #expect(report.skippedFiles.contains { $0.hasSuffix("assets/logo.bin") })
     }
 
-    @Test("replace updates only selected file")
-    func replaceUpdatesSelectedFile() throws {
+    @Test("search honors a glob name filter")
+    func searchHonorsGlobFilter() throws {
+        let fixture = try TemporaryFixture()
+        try fixture.write("app.py", contents: "alpha")
+        try fixture.write("lib/util.py", contents: "alpha alpha")
+        try fixture.write("lib/notes.txt", contents: "alpha")
+
+        let service = FileReplaceService()
+        let report = try service.search(
+            directoryURL: fixture.url,
+            namePattern: "*.py",
+            searchText: "alpha",
+            recursive: true,
+            maxDepth: 5
+        )
+
+        #expect(report.hits.count == 2)
+        #expect(report.hits.allSatisfy { $0.relativePath.hasSuffix(".py") })
+    }
+
+    @Test("search skips files above the size limit")
+    func searchSkipsLargeFiles() throws {
+        let fixture = try TemporaryFixture()
+        try fixture.write("small.txt", contents: "needle")
+        try fixture.write("big.txt", contents: String(repeating: "needle ", count: 2000))
+
+        let service = FileReplaceService()
+        let report = try service.search(
+            directoryURL: fixture.url,
+            namePattern: "",
+            searchText: "needle",
+            recursive: false,
+            maxDepth: 1,
+            maxFileSizeBytes: 64
+        )
+
+        #expect(report.hits.map(\.relativePath) == ["small.txt"])
+        #expect(report.skippedFiles.contains { $0.hasSuffix("big.txt") })
+    }
+
+    @Test("search throws when the name filter matches nothing")
+    func searchThrowsWhenFilterMatchesNothing() throws {
+        let fixture = try TemporaryFixture()
+        try fixture.write("app.py", contents: "alpha")
+
+        let service = FileReplaceService()
+        #expect(throws: FileReplaceError.self) {
+            _ = try service.search(
+                directoryURL: fixture.url,
+                namePattern: "*.rs",
+                searchText: "alpha",
+                recursive: true,
+                maxDepth: 5
+            )
+        }
+    }
+
+    @Test("replace updates a matched file and keeps a backup")
+    func replaceUpdatesFile() throws {
         let fixture = try TemporaryFixture()
         let fileURL = try fixture.write("app.py", contents: "alpha beta alpha")
 
         let service = FileReplaceService()
         let report = try service.search(
             directoryURL: fixture.url,
-            filename: "app.py",
             searchText: "alpha",
             recursive: false,
             maxDepth: 1
@@ -71,24 +129,6 @@ struct FileReplaceServiceTests {
         #expect(try String(contentsOf: result.backupURL, encoding: .utf8) == "alpha beta alpha")
     }
 
-    @Test("search rejects binary files")
-    func searchRejectsBinaryFiles() throws {
-        let fixture = try TemporaryFixture()
-        try fixture.writeData("data.bin", data: Data([0x00, 0x01, 0x02, 0x03]))
-
-        let service = FileReplaceService()
-
-        #expect(throws: FileReplaceError.unsupportedFileType(fixture.url.appendingPathComponent("data.bin").path)) {
-            _ = try service.search(
-                directoryURL: fixture.url,
-                filename: "data.bin",
-                searchText: "x",
-                recursive: false,
-                maxDepth: 1
-            )
-        }
-    }
-
     @Test("replace creates unique backup files")
     func replaceCreatesUniqueBackupFiles() throws {
         let fixture = try TemporaryFixture()
@@ -97,7 +137,6 @@ struct FileReplaceServiceTests {
         let service = FileReplaceService()
         let report = try service.search(
             directoryURL: fixture.url,
-            filename: "app.py",
             searchText: "alpha",
             recursive: false,
             maxDepth: 1
@@ -111,6 +150,38 @@ struct FileReplaceServiceTests {
         #expect(try String(contentsOf: first.backupURL, encoding: .utf8) == "alpha")
         #expect(try String(contentsOf: second.backupURL, encoding: .utf8) == "beta")
         #expect(try String(contentsOf: fileURL, encoding: .utf8) == "gamma")
+    }
+
+    @Test("replace refuses read-only files without creating a backup")
+    func replaceRefusesReadOnlyFiles() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("locked.txt", contents: "alpha")
+
+        let service = FileReplaceService()
+        let report = try service.search(
+            directoryURL: fixture.url,
+            searchText: "alpha",
+            recursive: false,
+            maxDepth: 1
+        )
+        let hit = try #require(report.hits.first)
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: fileURL.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: fileURL.path) }
+
+        do {
+            _ = try service.replace(in: hit, searchText: "alpha", replacementText: "omega")
+            Issue.record("replace debería haber lanzado un error para un archivo de solo lectura")
+        } catch let error as FileReplaceError {
+            guard case .notWritable = error else {
+                Issue.record("Se esperaba .notWritable, se obtuvo \(error)")
+                return
+            }
+        }
+
+        let backupURL = fileURL.deletingLastPathComponent().appendingPathComponent("locked.txt.replacer-backup")
+        #expect(FileManager.default.fileExists(atPath: backupURL.path) == false)
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "alpha")
     }
 }
 

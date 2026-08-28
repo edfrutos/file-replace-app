@@ -10,11 +10,11 @@ Sources/
   FileReplaceCore/
     AppVersion.swift
     FileReplaceService.swift
+    ReplacerBuildInfo.swift
   FileReplaceApp/
     FileReplaceApp.swift
     ContentView.swift
     UpdateCenter.swift
-    Resources/Version.txt
 Tests/
   FileReplaceCoreTests/
     FileReplaceCoreTests.swift
@@ -34,6 +34,8 @@ swift run Replacer
 ```
 
 También puedes abrir la carpeta del proyecto en Xcode y ejecutar el esquema `Replacer`.
+
+Nota: al ejecutar con `swift run` (binario sin bundle), el panel nativo de selección de carpetas puede no aparecer, porque macOS lo sirve desde un proceso aparte que necesita un `Info.plist`. En ese caso, usa el campo de texto de la sección **Ubicación** para escribir o pegar la ruta del directorio, o ejecuta la app empaquetada (`scripts/build-macos-app.sh` y abre `dist/Replacer.app`).
 
 ## Crear paquete `.app`
 
@@ -55,12 +57,13 @@ Los tests crean archivos temporales y no modifican el contenido real del reposit
 
 ## Flujo de uso
 
-1. Selecciona un directorio con el selector nativo de macOS.
-2. Selecciona uno de los archivos de texto listados para el directorio elegido.
+1. Selecciona un directorio con el selector nativo de macOS, o escribe/pega su ruta en el campo de la sección Ubicación (acepta `~`).
+2. Opcional: escribe un filtro de nombre con patrón glob (`*.js`, `config*`, `.env*`). Si lo dejas vacío, la búsqueda revisa todos los archivos del alcance.
 3. Introduce el texto a buscar y el texto de reemplazo.
-4. Activa la búsqueda recursiva si necesitas revisar subdirectorios. El selector pasará a mostrar nombres únicos de archivos de texto encontrados bajo esa carpeta.
-5. Ejecuta la búsqueda, revisa las previsualizaciones y desmarca los archivos que no quieras modificar.
-6. Pulsa `Reemplazar seleccionados` y confirma la operación. Replacer creará una copia `.replacer-backup` junto a cada archivo antes de escribir.
+4. Activa la búsqueda recursiva y ajusta la profundidad si necesitas revisar subdirectorios.
+5. Ejecuta la búsqueda. Replacer lee cada archivo como UTF-8, omite binarios, archivos no UTF-8 y archivos mayores de 5 MB, e informa de cuántos ha omitido.
+6. Ningún resultado viene marcado: revisa las previsualizaciones y marca los archivos que quieras modificar (o usa `Seleccionar todo`).
+7. Pulsa `Reemplazar seleccionados` y confirma la operación. Replacer creará una copia `.replacer-backup` junto a cada archivo antes de escribir. Los archivos de solo lectura se informan como error y no se tocan.
 
 ## Actualizaciones
 

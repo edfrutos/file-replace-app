@@ -16,7 +16,7 @@ El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es v
 Package.swift
 Sources/
   FileReplaceApp/       # App macOS SwiftUI
-  FileReplaceCore/      # Lógica de búsqueda y reemplazo
+  FileReplaceCore/      # Lógica de búsqueda y reemplazo + ReplacerBuildInfo (versión)
 Tests/
   FileReplaceCoreTests/ # Tests unitarios con directorios temporales
 scripts/
@@ -85,7 +85,7 @@ El DMG se crea como `dist/Replacer-<versión>.dmg` e incluye `Replacer.app` y un
 
 Para distribución limitada, comparte también la suma SHA-256 por un canal independiente para que el destinatario pueda verificar el archivo antes de abrirlo.
 
-La versión del bundle se lee de `Sources/FileReplaceApp/Resources/Version.txt`. Actualiza ese único archivo antes de empaquetar una nueva release.
+La versión se define en `Sources/FileReplaceCore/ReplacerBuildInfo.swift` (`ReplacerBuildInfo.version`). Actualiza esa constante antes de empaquetar una nueva release; los scripts la leen para `CFBundleShortVersionString` y el nombre del DMG.
 
 ## Probar
 

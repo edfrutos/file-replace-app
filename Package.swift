@@ -15,10 +15,7 @@ let package = Package(
         .target(name: "FileReplaceCore"),
         .executableTarget(
             name: "FileReplaceApp",
-            dependencies: ["FileReplaceCore"],
-            resources: [
-                .process("Resources")
-            ]
+            dependencies: ["FileReplaceCore"]
         ),
         .testTarget(
             name: "FileReplaceCoreTests",

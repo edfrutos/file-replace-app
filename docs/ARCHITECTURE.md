@@ -23,13 +23,14 @@ graph TD
 
 ## Flujo De Datos
 
-1. El usuario selecciona un directorio desde la UI nativa.
-2. `ContentView.swift` lista nombres de archivos candidatos y limita el listado recursivo para mantener la app ágil.
-3. Al buscar, `FileReplaceService.search` valida directorio, nombre de archivo y cadena de búsqueda.
-4. El core localiza archivos con el nombre indicado, lee cada archivo como UTF-8 estricto y rechaza contenido con bytes nulos o no decodificable.
-5. La UI muestra coincidencias, conteo y vista previa.
-6. Al reemplazar, el core crea primero una copia `.replacer-backup` junto al archivo original.
-7. Si el backup se crea correctamente, el core escribe el nuevo contenido con codificación UTF-8.
+1. El usuario selecciona un directorio desde la UI nativa y, opcionalmente, un filtro de nombre (patrón glob tipo `*.js`, `config*`).
+2. Al buscar, `FileReplaceService.search` valida directorio y cadena de búsqueda. El filtro de nombre es opcional; vacío significa "todos los archivos del alcance".
+3. El core recorre el directorio (o el árbol hasta `maxDepth` niveles si la búsqueda es recursiva), aplica el filtro de nombre y, por cada archivo, lo lee como UTF-8 estricto.
+4. Los archivos con bytes nulos, no decodificables como UTF-8 o que superan el tamaño máximo (`defaultMaxFileSizeBytes`, 5 MB) se añaden a `skippedFiles` y la búsqueda continúa con el resto.
+5. La UI muestra coincidencias, conteo, vista previa, archivos omitidos y si se alcanzó el límite de resultados (`defaultMaxResults`, 1000).
+6. Tras la búsqueda, ningún resultado queda preseleccionado: el usuario debe marcar explícitamente los archivos antes de poder reemplazar.
+7. Al reemplazar, el core comprueba que el archivo sea escribible; si es de solo lectura devuelve `notWritable` sin crear backup ni tocar el archivo.
+8. Si el archivo es escribible, el core crea primero una copia `.replacer-backup` junto al original y después escribe el nuevo contenido en UTF-8.
 
 En distribución limitada no se incorporan tokens ni se consulta automáticamente la API privada de GitHub. `UpdateCenter` abre bajo petición la página de releases en el navegador, donde GitHub aplica la sesión y los permisos del destinatario. La acción está disponible en la cabecera y en el menú de la aplicación.
 
@@ -68,7 +69,9 @@ static/index.html       # UI web heredada
 
 ## Límites Intencionados
 
-- La búsqueda es por nombre exacto de archivo y cadena exacta, no por expresiones regulares.
-- El core solo procesa texto UTF-8 editable.
+- La búsqueda es por cadena exacta, no por expresiones regulares. El filtro de nombre admite patrones glob POSIX (`fnmatch`), no regex.
+- El core solo procesa texto UTF-8 editable y omite archivos por encima del tamaño máximo; no rastrea binarios ni archivos enormes.
 - Los backups se crean junto al archivo original; no hay sistema global de historial ni restauración automática.
-- La app escribe en el filesystem local, por lo que el flujo mantiene confirmación explícita antes de reemplazar.
+- La app escribe en el filesystem local, por lo que el flujo exige selección explícita de resultados y confirmación antes de reemplazar.
+- Los archivos de solo lectura se informan como error por archivo y no se modifican; la app no altera permisos.
+- La búsqueda recursiva incluye archivos ocultos pero poda directorios de ruido (`.git`, `node_modules`, `.venv`, `.build`, `__pycache__`, etc.) y nunca trata los `.replacer-backup` como objetivo.

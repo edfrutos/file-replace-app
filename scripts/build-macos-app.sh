@@ -3,7 +3,8 @@ set -euo pipefail
 
 APP_NAME="Replacer"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION_FILE="$ROOT_DIR/Sources/FileReplaceApp/Resources/Version.txt"
+VERSION_FILE="$ROOT_DIR/Sources/FileReplaceCore/ReplacerBuildInfo.swift"
+BUNDLE_VERSION="3"
 DIST_DIR="$ROOT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
@@ -12,7 +13,7 @@ RESOURCES_DIR="$CONTENTS_DIR/Resources"
 
 cd "$ROOT_DIR"
 
-APP_VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")"
+APP_VERSION="$(sed -n 's/.*let version = "\([0-9][0-9A-Za-z.+-]*\)".*/\1/p' "$VERSION_FILE" | head -1)"
 if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
     echo "Versión no válida en $VERSION_FILE: $APP_VERSION" >&2
     exit 1
@@ -47,7 +48,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
     <key>CFBundleShortVersionString</key>
     <string>$APP_VERSION</string>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>$BUNDLE_VERSION</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>

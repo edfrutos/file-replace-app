@@ -3,8 +3,8 @@ set -euo pipefail
 
 APP_NAME="Replacer"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION_FILE="$ROOT_DIR/Sources/FileReplaceApp/Resources/Version.txt"
-APP_VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")"
+VERSION_FILE="$ROOT_DIR/Sources/FileReplaceCore/ReplacerBuildInfo.swift"
+APP_VERSION="$(sed -n 's/.*let version = "\([0-9][0-9A-Za-z.+-]*\)".*/\1/p' "$VERSION_FILE" | head -1)"
 DIST_DIR="$ROOT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 DMG_PATH="$DIST_DIR/$APP_NAME-$APP_VERSION.dmg"

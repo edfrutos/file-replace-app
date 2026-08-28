@@ -4,10 +4,6 @@ import AppKit
 import Foundation
 
 let rootURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let resourceURL = rootURL
-    .appendingPathComponent("Sources")
-    .appendingPathComponent("FileReplaceApp")
-    .appendingPathComponent("Resources")
 let assetsURL = rootURL
     .appendingPathComponent("Assets")
     .appendingPathComponent("AppIcon")
@@ -126,12 +122,6 @@ func writePNG(_ image: NSImage, to url: URL) throws {
 
 for (filename, size) in iconFiles {
     try writePNG(drawIcon(size: size), to: iconsetURL.appendingPathComponent(filename))
-}
-
-let previewURL = resourceURL.appendingPathComponent("AppIconPreview.png")
-if !FileManager.default.fileExists(atPath: previewURL.path) {
-    try FileManager.default.createDirectory(at: resourceURL, withIntermediateDirectories: true)
-    try writePNG(drawIcon(size: 256), to: previewURL)
 }
 
 let iconutil = Process()
