@@ -103,6 +103,8 @@ Los tests usan archivos temporales y no modifican contenido real del repositorio
 - [Pruebas](docs/TESTING.md)
 - [Testing humano](TESTING_HUMANO.md)
 - [Configuración](docs/CONFIGURATION.md)
+- [Publicar una release](docs/RELEASING.md)
+- [Cambios](CHANGELOG.md)
 - [API heredada Flask](docs/API.md)
 
 ## Seguridad
