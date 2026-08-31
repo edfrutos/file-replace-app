@@ -69,13 +69,14 @@ Si cambias la versión Flask y tienes `flask` instalado, haz también una compro
 
 El checklist completo de validación humana está en [`TESTING_HUMANO.md`](../TESTING_HUMANO.md). Cubre:
 
-- app macOS nativa;
-- app empaquetada `dist/Replacer.app`;
-- búsqueda directa y recursiva;
-- reemplazo con backups;
+- app macOS nativa y app empaquetada `dist/Replacer.app`;
+- selección de directorio por panel y por ruta escrita/pegada;
+- filtro de nombre glob y búsqueda sin filtro (todos los archivos);
+- búsqueda directa y recursiva con poda de directorios de ruido;
+- omisión de binarios, no UTF-8 y archivos mayores de 5 MB;
+- selección previa obligatoria y reemplazo con backups;
+- rechazo de archivos de solo lectura;
 - cancelación;
-- rechazo de binarios/no UTF-8;
-- versión Flask heredada;
-- protección de `/api/replace`.
+- versión Flask heredada y protección de `/api/replace`.
 
-Última revisión manual registrada: 100% completada.
+Última pasada manual completa registrada: v1.1.0. El checklist está actualizado para v1.2.0 y pendiente de una pasada completa.
