@@ -3,6 +3,22 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Este proyecto usa versionado semántico.
 
+## [Sin publicar]
+
+### Añadido
+
+- **Mostrar en Finder** sobre cada resultado de búsqueda: revela el archivo ya
+  seleccionado en su carpeta contenedora (`NSWorkspace.activateFileViewerSelecting`).
+  Si el archivo ya no existe, informa del error sin abrir Finder.
+- **Ver contenido** sobre cada resultado de búsqueda: abre una hoja de solo lectura
+  con el contenido íntegro del archivo y resalta todas las coincidencias del texto
+  buscado (antes solo se veía un fragmento corto alrededor de la primera coincidencia).
+  Reutiliza las mismas validaciones de UTF-8 y tamaño máximo que la búsqueda; si el
+  archivo cambió, se borró o creció por encima del límite desde la búsqueda, la hoja
+  muestra el error correspondiente en vez del contenido.
+- `FileReplaceService.readFullContent(at:maxBytes:)`: nuevo método público que expone
+  la lectura de texto UTF-8 estricto ya usada internamente por `search`.
+
 ## [1.2.0] - 2026-08-28
 
 Distribución limitada para Apple Silicon. Firma ad-hoc, sin notarización.

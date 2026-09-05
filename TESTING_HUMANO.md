@@ -2,7 +2,7 @@
 
 Guía de revisión manual para validar Replacer antes de hacer `git push` o de empaquetar una release.
 
-Estado: pendiente de pasada completa sobre el commit de v1.2.0.
+Estado: pasada manual completa al 100%, incluida la funcionalidad de localizar en Finder y ver contenido (2026-09-05).
 
 ## Objetivo
 
@@ -73,9 +73,9 @@ python3 -m py_compile app.py
 
 Aceptación:
 
-- [ ] `swift test` pasa con **10 tests** (2 de `AppVersion`, 8 de `FileReplaceService`).
-- [ ] `swift build --product Replacer` compila sin errores ni warnings nuevos.
-- [ ] `python3 -m py_compile app.py` no muestra errores.
+- [x] `swift test` pasa con **14 tests** (2 de `AppVersion`, 12 de `FileReplaceService`).
+- [x] `swift build --product Replacer` compila sin errores ni warnings nuevos.
+- [x] `python3 -m py_compile app.py` no muestra errores.
 
 ## 1. Arranque de la app
 
@@ -88,25 +88,25 @@ script/build_and_run.sh
 
 Aceptación:
 
-- [ ] La app abre sin crash (regresión de `Bundle.module` corregida en 1.2.0).
-- [ ] El **panel lateral es visible de inmediato** con las secciones Ubicación, Búsqueda y Acciones.
-- [ ] El botón `Actualizaciones` de la cabecera muestra un diálogo con la versión `1.2.0`.
-- [ ] `Buscar coincidencias` está deshabilitado hasta tener directorio y texto de búsqueda.
-- [ ] `Reemplazar seleccionados` está deshabilitado sin nada marcado.
+- [x] La app abre sin crash (regresión de `Bundle.module` corregida en 1.2.0).
+- [x] El **panel lateral es visible de inmediato** con las secciones Ubicación, Búsqueda y Acciones.
+- [x] El botón `Actualizaciones` de la cabecera muestra un diálogo con la versión `1.2.0`.
+- [x] `Buscar coincidencias` está deshabilitado hasta tener directorio y texto de búsqueda.
+- [x] `Reemplazar seleccionados` está deshabilitado sin nada marcado.
 
 ## 2. Selección de directorio: panel
 
-- [ ] Pulsa `Seleccionar directorio` y elige `/tmp/replacer-human-test`.
-- [ ] La ruta aparece bajo el botón y el estado invita a escribir el texto a buscar.
-- [ ] Si el panel se cancela, el estado lo indica y sugiere usar el campo de ruta.
+- [x] Pulsa `Seleccionar directorio` y elige `/tmp/replacer-human-test`.
+- [x] La ruta aparece bajo el botón y el estado invita a escribir el texto a buscar.
+- [x] Si el panel se cancela, el estado lo indica y sugiere usar el campo de ruta.
 
 ## 3. Selección de directorio: ruta escrita/pegada
 
-- [ ] Borra la selección reiniciando la app o eligiendo otra carpeta.
-- [ ] En el campo `~/ruta/al/proyecto` pega `/tmp/replacer-human-test` y pulsa `Usar` (o Intro).
-- [ ] Se fija el mismo directorio que con el panel.
-- [ ] Con una ruta inexistente o que sea un archivo, el estado avisa y no cambia el directorio.
-- [ ] El campo acepta pegar con Cmd+V y expande `~`.
+- [x] Borra la selección reiniciando la app o eligiendo otra carpeta.
+- [x] En el campo `~/ruta/al/proyecto` pega `/tmp/replacer-human-test` y pulsa `Usar` (o Intro).
+- [x] Se fija el mismo directorio que con el panel.
+- [x] Con una ruta inexistente o que sea un archivo, el estado avisa y no cambia el directorio.
+- [x] El campo acepta pegar con Cmd+V y expande `~`.
 
 ## 4. Búsqueda sin filtro de nombre (todos los archivos), no recursiva
 
@@ -121,25 +121,25 @@ Buscar en subdirectorios: desactivado
 
 Aceptación:
 
-- [ ] Durante la búsqueda el estado muestra `Buscando…` y la ventana sigue respondiendo.
-- [ ] Aparecen los archivos del **directorio raíz** con `alpha`: `app.txt` y `readonly.txt`.
-- [ ] `otro.txt` no aparece (0 coincidencias).
-- [ ] El estado indica cuántos archivos se han omitido (`binario.dat`, `no-utf8.txt`, `grande.txt`).
-- [ ] **Ningún resultado viene marcado.**
-- [ ] `Reemplazar seleccionados` sigue deshabilitado hasta marcar algo.
+- [x] Durante la búsqueda el estado muestra `Buscando…` y la ventana sigue respondiendo.
+- [x] Aparecen los archivos del **directorio raíz** con `alpha`: `app.txt` y `readonly.txt`.
+- [x] `otro.txt` no aparece (0 coincidencias).
+- [x] El estado indica cuántos archivos se han omitido (`binario.dat`, `no-utf8.txt`, `grande.txt`).
+- [x] **Ningún resultado viene marcado.**
+- [x] `Reemplazar seleccionados` sigue deshabilitado hasta marcar algo.
 
 ## 5. Selección previa obligatoria y reemplazo con backup
 
-- [ ] Marca solo `app.txt` (deja `readonly.txt` sin marcar).
-- [ ] `Reemplazar seleccionados` se habilita al marcar.
-- [ ] Púlsalo y confirma el diálogo.
+- [x] Marca solo `app.txt` (deja `readonly.txt` sin marcar).
+- [x] `Reemplazar seleccionados` se habilita al marcar.
+- [x] Púlsalo y confirma el diálogo.
 
 Aceptación:
 
-- [ ] El log final muestra `app.txt: 3 reemplazo(s)` y el nombre del backup.
-- [ ] `/tmp/replacer-human-test/app.txt` contiene `omega`.
-- [ ] Existe `/tmp/replacer-human-test/app.txt.replacer-backup` con el contenido original (`alpha`).
-- [ ] `readonly.txt` no se ha tocado y no tiene backup.
+- [x] El log final muestra `app.txt: 3 reemplazo(s)` y el nombre del backup.
+- [x] `/tmp/replacer-human-test/app.txt` contiene `omega`.
+- [x] Existe `/tmp/replacer-human-test/app.txt.replacer-backup` con el contenido original (`alpha`).
+- [x] `readonly.txt` no se ha tocado y no tiene backup.
 
 ```bash
 cat /tmp/replacer-human-test/app.txt
@@ -152,9 +152,9 @@ Configura `Texto a buscar: omega`, `Texto de reemplazo: alpha`, no recursiva. Bu
 
 Aceptación:
 
-- [ ] Se crea un segundo backup con sufijo, p. ej. `app.txt.replacer-backup-1`.
-- [ ] No se sobrescribe el backup anterior.
-- [ ] El contenido final vuelve a tener `alpha`.
+- [x] Se crea un segundo backup con sufijo, p. ej. `app.txt.replacer-backup-1`.
+- [x] No se sobrescribe el backup anterior.
+- [x] El contenido final vuelve a tener `alpha`.
 
 ## 7. Filtro de nombre glob
 
@@ -169,10 +169,10 @@ Profundidad: 5
 
 Aceptación:
 
-- [ ] Aparece `apps/client/.env` (archivo oculto encontrado por el patrón).
-- [ ] No aparece ningún `.txt`.
-- [ ] La preview marca el guion largo, es decir, **el campo de texto no lo convirtió** en otro carácter.
-- [ ] Prueba también `Filtro de nombre: app.txt` recursivo: aparecen `app.txt`, `nivel1/app.txt`,
+- [x] Aparece `apps/client/.env` (archivo oculto encontrado por el patrón).
+- [x] No aparece ningún `.txt`.
+- [x] La preview marca el guion largo, es decir, **el campo de texto no lo convirtió** en otro carácter.
+- [x] Prueba también `Filtro de nombre: app.txt` recursivo: aparecen `app.txt`, `nivel1/app.txt`,
       `nivel1/nivel2/app.txt`, pero **no** `node_modules/pkg/app.txt` (directorio podado).
 
 ## 8. Búsqueda recursiva y profundidad
@@ -181,18 +181,18 @@ Configura `Filtro de nombre: app.txt`, `Texto a buscar: alpha`, recursiva, `Prof
 
 Aceptación:
 
-- [ ] Con profundidad 1 no aparece `nivel1/nivel2/app.txt`.
-- [ ] Al subir el slider a 3 y **volver a pulsar** `Buscar coincidencias`, sí aparece.
-- [ ] La barra de resultados permite `Seleccionar todo` y `Limpiar selección`.
+- [x] Con profundidad 1 no aparece `nivel1/nivel2/app.txt`.
+- [x] Al subir el slider a 3 y **volver a pulsar** `Buscar coincidencias`, sí aparece.
+- [x] La barra de resultados permite `Seleccionar todo` y `Limpiar selección`.
 
 ## 9. Reemplazo parcial en recursivo
 
 Con los `app.txt` del árbol en resultados (`alpha` -> `gamma`, recursivo, profundidad 3):
 
-- [ ] `Seleccionar todo`, luego desmarca `nivel1/nivel2/app.txt`.
-- [ ] Reemplaza seleccionados.
-- [ ] Solo cambian los archivos marcados; cada uno tiene su backup.
-- [ ] El archivo desmarcado no cambia y no genera backup nuevo.
+- [x] `Seleccionar todo`, luego desmarca `nivel1/nivel2/app.txt`.
+- [x] Reemplaza seleccionados.
+- [x] Solo cambian los archivos marcados; cada uno tiene su backup.
+- [x] El archivo desmarcado no cambia y no genera backup nuevo.
 
 ## 10. Rechazo de binarios, no‑UTF‑8 y archivos grandes
 
@@ -201,9 +201,9 @@ Con `Filtro de nombre` vacío o apuntando a cada archivo, busca `alpha` sobre `b
 
 Aceptación:
 
-- [ ] Ninguno aparece como resultado.
-- [ ] El estado los cuenta como omitidos.
-- [ ] No se crea backup ni se modifica ninguno.
+- [x] Ninguno aparece como resultado.
+- [x] El estado los cuenta como omitidos.
+- [x] No se crea backup ni se modifica ninguno.
 
 ## 11. Archivo de solo lectura
 
@@ -211,9 +211,9 @@ Configura `Texto a buscar: alpha`, no recursiva. Marca `readonly.txt` y reemplaz
 
 Aceptación:
 
-- [ ] El log muestra para `readonly.txt` un error de solo lectura.
-- [ ] `readonly.txt` conserva su contenido.
-- [ ] No se ha creado `readonly.txt.replacer-backup`.
+- [x] El log muestra para `readonly.txt` un error de solo lectura.
+- [x] `readonly.txt` conserva su contenido.
+- [x] No se ha creado `readonly.txt.replacer-backup`.
 
 ## 12. Reemplazo por cadena vacía
 
@@ -221,8 +221,8 @@ Aceptación:
 
 Aceptación:
 
-- [ ] La app permite el reemplazo por cadena vacía (elimina ocurrencias).
-- [ ] Se crea backup antes de escribir.
+- [x] La app permite el reemplazo por cadena vacía (elimina ocurrencias).
+- [x] Se crea backup antes de escribir.
 
 ## 13. Cancelación
 
@@ -231,14 +231,14 @@ En el diálogo `Confirmar reemplazo`, pulsa `Cancelar` o `Esc`.
 
 Aceptación:
 
-- [ ] No se modifica ningún archivo.
-- [ ] No se crea ningún backup.
+- [x] No se modifica ningún archivo.
+- [x] No se crea ningún backup.
 
 ## 14. Límite de resultados
 
 Opcional, sobre un árbol real grande (p. ej. la carpeta de un proyecto con muchos archivos):
 
-- [ ] Con filtro vacío y profundidad alta, si se superan 1000 archivos el estado lo advierte
+- [x] Con filtro vacío y profundidad alta, si se superan 1000 archivos el estado lo advierte
       y sugiere acotar con un filtro de nombre o menos profundidad.
 
 ## 15. App empaquetada y DMG
@@ -249,11 +249,11 @@ scripts/build-macos-app.sh
 
 Aceptación:
 
-- [ ] Se crea `dist/Replacer.app`.
-- [ ] `codesign --verify --deep --strict dist/Replacer.app` no da error.
-- [ ] La app abre desde Finder y **no crashea** al arrancar.
-- [ ] `Replacer > Acerca de` / cabecera muestran versión `1.2.0` (build 3).
-- [ ] Repite al menos las pruebas 2–5 con el bundle.
+- [x] Se crea `dist/Replacer.app`.
+- [x] `codesign --verify --deep --strict dist/Replacer.app` no da error.
+- [x] La app abre desde Finder y **no crashea** al arrancar.
+- [x] `Replacer > Acerca de` / cabecera muestran versión `1.2.0` (build 3).
+- [x] Repite al menos las pruebas 2–5 con el bundle.
 
 ```bash
 scripts/build-dmg.sh
@@ -261,11 +261,37 @@ scripts/build-dmg.sh
 
 Aceptación:
 
-- [ ] Se crea `dist/Replacer-1.2.0.dmg`.
-- [ ] `hdiutil verify` pasa.
-- [ ] Montado, contiene `Replacer.app` y un enlace a `Applications`.
+- [x] Se crea `dist/Replacer-1.2.0.dmg`.
+- [x] `hdiutil verify` pasa.
+- [x] Montado, contiene `Replacer.app` y un enlace a `Applications`.
 
-## 16. Versión Flask heredada (sin cambios en 1.2.0)
+## 16. Localizar en Finder y ver contenido
+
+Busca una cadena que aparezca en varios archivos, incluidos algunos en subdirectorios
+(activa la búsqueda recursiva).
+
+- [x] Pulsa el icono de carpeta sobre un resultado de primer nivel: Finder pasa a primer
+      plano con ese archivo seleccionado.
+- [x] Pulsa el icono de carpeta sobre un resultado anidado (dentro de un subdirectorio):
+      Finder selecciona el archivo correcto, no la carpeta raíz.
+- [x] Pulsa el icono de lupa sobre documento en un resultado con varias coincidencias: se
+      abre una hoja con el contenido completo del archivo y **todas** las coincidencias
+      resaltadas, no solo la primera (compara con el fragmento corto de la fila).
+- [x] Dentro de la hoja, pulsa `Mostrar en Finder`: el comportamiento es el mismo que desde
+      la fila.
+- [x] Cierra la hoja con `Cerrar` y confirma que la selección de checkboxes de los
+      resultados no cambió por haber abierto la vista previa.
+- [x] Fuera de la app, borra uno de los archivos que aparece en los resultados (sin repetir
+      la búsqueda). Pulsa el icono de carpeta sobre ese resultado: la cabecera muestra un
+      mensaje de error y Finder no se abre.
+- [x] Sobre el mismo archivo borrado, pulsa el icono de lupa: la hoja muestra un mensaje de
+      error en vez de contenido, y no crea ni modifica ningún archivo.
+- [x] Confirma que ningún `.replacer-backup` aparece nunca como resultado de búsqueda (y por
+      tanto tampoco tiene estas acciones disponibles).
+- [x] Repite al menos los dos primeros pasos con la app empaquetada (`dist/Replacer.app`),
+      no solo con `swift run`.
+
+## 17. Versión Flask heredada (sin cambios en 1.2.0)
 
 `app.py` no se ha tocado en esta release. Si necesitas revalidarla, sigue el checklist de la
 versión web que había en 1.1.0: arranque en `http://localhost:5050`, indicador de legado,
@@ -278,9 +304,9 @@ python -m venv .venv && source .venv/bin/activate && pip install flask && python
 
 Aceptación mínima:
 
-- [ ] La UI web arranca y se marca claramente como versión heredada.
-- [ ] `/api/replace` rechaza rutas no localizadas antes por `/api/search`.
-- [ ] Binarios y no‑UTF‑8 se rechazan también en la versión web.
+- [x] La UI web arranca y se marca claramente como versión heredada.
+- [x] `/api/replace` rechaza rutas no localizadas antes por `/api/search`.
+- [x] Binarios y no‑UTF‑8 se rechazan también en la versión web.
 
 ## Limpieza
 
@@ -292,17 +318,18 @@ deactivate 2>/dev/null || true
 
 ## Criterios de aceptación final
 
-- [ ] `swift test` pasa con 10 tests; `swift build --product Replacer` compila.
-- [ ] El panel lateral es visible al arrancar y la app empaquetada no crashea.
-- [ ] Directorio seleccionable por panel y por ruta escrita/pegada.
-- [ ] Filtro de nombre vacío rastrea todos los archivos; el patrón glob acota por nombre.
-- [ ] Binarios, no‑UTF‑8 y archivos > 5 MB se omiten sin abortar la búsqueda.
-- [ ] La búsqueda recursiva poda `.git`, `node_modules`, `.venv`, `.build`, `__pycache__`, etc.
-- [ ] Tras buscar no hay nada marcado; solo se reemplazan los archivos marcados.
-- [ ] Todo reemplazo crea backup antes de escribir; los backups no se sobrescriben.
-- [ ] Los archivos de solo lectura se informan y no se modifican.
-- [ ] Los campos de búsqueda/reemplazo no alteran comillas ni guiones.
-- [ ] Cancelar el diálogo no escribe ni crea backup.
-- [ ] La UI no se congela durante búsquedas o reemplazos largos.
-- [ ] `dist/Replacer-1.2.0.dmg` se genera y verifica.
-- [ ] No se han usado archivos reales del usuario durante la prueba.
+- [x] `swift test` pasa con 14 tests; `swift build --product Replacer` compila.
+- [x] El panel lateral es visible al arrancar y la app empaquetada no crashea.
+- [x] Directorio seleccionable por panel y por ruta escrita/pegada.
+- [x] Filtro de nombre vacío rastrea todos los archivos; el patrón glob acota por nombre.
+- [x] Binarios, no‑UTF‑8 y archivos > 5 MB se omiten sin abortar la búsqueda.
+- [x] La búsqueda recursiva poda `.git`, `node_modules`, `.venv`, `.build`, `__pycache__`, etc.
+- [x] Tras buscar no hay nada marcado; solo se reemplazan los archivos marcados.
+- [x] Todo reemplazo crea backup antes de escribir; los backups no se sobrescriben.
+- [x] Los archivos de solo lectura se informan y no se modifican.
+- [x] Los campos de búsqueda/reemplazo no alteran comillas ni guiones.
+- [x] Cancelar el diálogo no escribe ni crea backup.
+- [x] Mostrar en Finder y Ver contenido funcionan por resultado, sin alterar la selección de reemplazo ni el filesystem, y ambos informan del error si el archivo cambió o se borró.
+- [x] La UI no se congela durante búsquedas o reemplazos largos.
+- [x] `dist/Replacer-1.2.0.dmg` se genera y verifica.
+- [x] No se han usado archivos reales del usuario durante la prueba.

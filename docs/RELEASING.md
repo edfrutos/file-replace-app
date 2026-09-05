@@ -19,7 +19,7 @@ Si cambias el *build* del bundle, ajústalo en `scripts/build-macos-app.sh`
 ## 2. Verificar
 
 ```bash
-swift test                       # 10 tests en verde
+swift test                       # 14 tests en verde
 swift build --product Replacer   # la app SwiftUI completa compila
 python3 -m py_compile app.py      # la versión Flask heredada sigue compilando
 ```

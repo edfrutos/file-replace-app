@@ -77,6 +77,7 @@ El checklist completo de validación humana está en [`TESTING_HUMANO.md`](../TE
 - selección previa obligatoria y reemplazo con backups;
 - rechazo de archivos de solo lectura;
 - cancelación;
+- localizar un resultado en Finder y ver el contenido completo del archivo con resaltado;
 - versión Flask heredada y protección de `/api/replace`.
 
-Última pasada manual completa registrada: v1.1.0. El checklist está actualizado para v1.2.0 y pendiente de una pasada completa.
+Última pasada manual completa registrada: v1.2.0, incluida la funcionalidad de localizar en Finder y ver contenido (2026-09-05).

@@ -192,6 +192,17 @@ public final class FileReplaceService: @unchecked Sendable {
         )
     }
 
+    /// Lee el contenido completo de un archivo de texto para previsualizarlo.
+    /// Reutiliza las mismas validaciones que `search` (UTF-8 estricto, tamaño máximo),
+    /// para que un archivo excluido de los resultados por tamaño o codificación
+    /// tampoco pueda previsualizarse con un límite distinto.
+    public func readFullContent(
+        at fileURL: URL,
+        maxBytes: Int = FileReplaceService.defaultMaxFileSizeBytes
+    ) throws -> String {
+        try readTextFile(fileURL, maxBytes: maxBytes)
+    }
+
     public func replace(in hit: SearchHit, searchText: String, replacementText: String) throws -> ReplacementResult {
         guard !searchText.isEmpty else { throw FileReplaceError.emptySearch }
 

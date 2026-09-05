@@ -63,7 +63,8 @@ Los tests crean archivos temporales y no modifican el contenido real del reposit
 4. Activa la búsqueda recursiva y ajusta la profundidad si necesitas revisar subdirectorios.
 5. Ejecuta la búsqueda. Replacer lee cada archivo como UTF-8, omite binarios, archivos no UTF-8 y archivos mayores de 5 MB, e informa de cuántos ha omitido.
 6. Ningún resultado viene marcado: revisa las previsualizaciones y marca los archivos que quieras modificar (o usa `Seleccionar todo`).
-7. Pulsa `Reemplazar seleccionados` y confirma la operación. Replacer creará una copia `.replacer-backup` junto a cada archivo antes de escribir. Los archivos de solo lectura se informan como error y no se tocan.
+7. Sobre cada resultado, el icono de carpeta lo revela en Finder ya seleccionado, y el icono de lupa sobre documento abre una hoja de solo lectura con el contenido íntegro del archivo y todas las coincidencias resaltadas (no solo la primera). Ninguna de las dos acciones modifica archivos ni cambia la selección de reemplazo; si el archivo cambió o se borró desde la búsqueda, se informa del error.
+8. Pulsa `Reemplazar seleccionados` y confirma la operación. Replacer creará una copia `.replacer-backup` junto a cada archivo antes de escribir. Los archivos de solo lectura se informan como error y no se tocan.
 
 ## Actualizaciones
 

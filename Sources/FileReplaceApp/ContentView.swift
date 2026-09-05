@@ -57,6 +57,12 @@ final class FileReplaceViewModel: ObservableObject {
     @Published var lastReport: SearchReport?
     @Published var replacementLog: [String] = []
 
+    @Published var previewHit: SearchHit?
+    @Published var previewContent: String?
+    @Published var previewError: String?
+    @Published var isLoadingPreview = false
+    private(set) var previewHighlightText = ""
+
     private let service = FileReplaceService()
 
     var selectedHits: [SearchHit] {
@@ -233,6 +239,50 @@ final class FileReplaceViewModel: ObservableObject {
     func clearSelection() {
         selectedHitIDs = []
     }
+
+    /// Trae Finder a primer plano con `hit` ya seleccionado en su carpeta contenedora.
+    /// No modifica ni crea nada en el filesystem.
+    func revealInFinder(_ hit: SearchHit) {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: hit.fileURL.path, isDirectory: &isDirectory) else {
+            statusMessage = "No se pudo localizar en Finder: el archivo ya no existe en \(hit.fileURL.path)."
+            return
+        }
+        NSWorkspace.shared.activateFileViewerSelecting([hit.fileURL])
+    }
+
+    /// Abre la hoja de previsualización y carga el contenido completo del archivo
+    /// fuera del hilo principal. El texto a resaltar se congela al abrir la hoja,
+    /// aunque el usuario siga editando el campo de búsqueda mientras está abierta.
+    func openPreview(for hit: SearchHit) {
+        previewHit = hit
+        previewContent = nil
+        previewError = nil
+        previewHighlightText = searchText
+        isLoadingPreview = true
+
+        let fileURL = hit.fileURL
+        let service = self.service
+
+        Task {
+            do {
+                let content = try await Task.detached(priority: .userInitiated) {
+                    try service.readFullContent(at: fileURL)
+                }.value
+                previewContent = content
+            } catch {
+                previewError = error.localizedDescription
+            }
+            isLoadingPreview = false
+        }
+    }
+
+    func closePreview() {
+        previewHit = nil
+        previewContent = nil
+        previewError = nil
+        previewHighlightText = ""
+    }
 }
 
 struct ContentView: View {
@@ -251,6 +301,17 @@ struct ContentView: View {
                 .frame(minWidth: 460, maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 860, minHeight: 620)
+        .sheet(item: $viewModel.previewHit) { hit in
+            FileContentPreviewView(
+                hit: hit,
+                content: viewModel.previewContent,
+                errorMessage: viewModel.previewError,
+                isLoading: viewModel.isLoadingPreview,
+                highlightText: viewModel.previewHighlightText,
+                onRevealInFinder: { viewModel.revealInFinder(hit) },
+                onClose: { viewModel.closePreview() }
+            )
+        }
     }
 
     private var detailPane: some View {
@@ -269,7 +330,9 @@ struct ContentView: View {
                                 HitRow(
                                     hit: hit,
                                     isSelected: viewModel.selectedHitIDs.contains(hit.id),
-                                    onToggle: { viewModel.toggleSelection(for: hit) }
+                                    onToggle: { viewModel.toggleSelection(for: hit) },
+                                    onRevealInFinder: { viewModel.revealInFinder(hit) },
+                                    onViewContent: { viewModel.openPreview(for: hit) }
                                 )
                             }
                         }
@@ -698,61 +761,77 @@ struct HitRow: View {
     let hit: SearchHit
     let isSelected: Bool
     let onToggle: () -> Void
+    let onRevealInFinder: () -> Void
+    let onViewContent: () -> Void
 
     var body: some View {
-        Button(action: onToggle) {
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(isSelected ? ReplacerTheme.teal : ReplacerTheme.muted.opacity(0.6))
+        HStack(alignment: .top, spacing: 14) {
+            Button(action: onToggle) {
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.title2)
+                        .foregroundStyle(isSelected ? ReplacerTheme.teal : ReplacerTheme.muted.opacity(0.6))
 
-                VStack(alignment: .leading, spacing: 9) {
-                    HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 9) {
                         Text(hit.relativePath)
                             .font(.headline.weight(.bold))
                             .foregroundStyle(ReplacerTheme.ink)
                             .lineLimit(2)
 
-                        Spacer()
+                        Text(hit.fileURL.path)
+                            .font(.caption)
+                            .foregroundStyle(ReplacerTheme.muted)
+                            .lineLimit(1)
 
-                        Text("\(hit.count) coincidencia(s)")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(ReplacerTheme.blue)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 5)
-                            .background(ReplacerTheme.blue.opacity(0.10))
-                            .clipShape(Capsule())
+                        Text(hit.preview)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(ReplacerTheme.ink.opacity(0.86))
+                            .lineLimit(4)
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(red: 0.96, green: 0.98, blue: 1.0))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
-
-                    Text(hit.fileURL.path)
-                        .font(.caption)
-                        .foregroundStyle(ReplacerTheme.muted)
-                        .lineLimit(1)
-
-                    Text(hit.preview)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(ReplacerTheme.ink.opacity(0.86))
-                        .lineLimit(4)
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(red: 0.96, green: 0.98, blue: 1.0))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
+                .contentShape(Rectangle())
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color.white.opacity(isSelected ? 0.96 : 0.78))
-                    .shadow(color: Color.black.opacity(isSelected ? 0.10 : 0.05), radius: 16, y: 8)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(isSelected ? ReplacerTheme.teal.opacity(0.55) : ReplacerTheme.border, lineWidth: isSelected ? 1.5 : 1)
-            )
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            VStack(alignment: .trailing, spacing: 10) {
+                Text("\(hit.count) coincidencia(s)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(ReplacerTheme.blue)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(ReplacerTheme.blue.opacity(0.10))
+                    .clipShape(Capsule())
+
+                HStack(spacing: 6) {
+                    Button(action: onRevealInFinder) {
+                        Image(systemName: "folder")
+                    }
+                    .help("Mostrar en Finder")
+
+                    Button(action: onViewContent) {
+                        Image(systemName: "doc.text.magnifyingglass")
+                    }
+                    .help("Ver contenido completo")
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(ReplacerTheme.muted)
+            }
         }
-        .buttonStyle(.plain)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(isSelected ? 0.96 : 0.78))
+                .shadow(color: Color.black.opacity(isSelected ? 0.10 : 0.05), radius: 16, y: 8)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(isSelected ? ReplacerTheme.teal.opacity(0.55) : ReplacerTheme.border, lineWidth: isSelected ? 1.5 : 1)
+        )
     }
 }
 
@@ -774,5 +853,161 @@ struct ReplacementLogView: View {
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.76))
+    }
+}
+
+/// Hoja de solo lectura que muestra el contenido íntegro de un `SearchHit` con las
+/// coincidencias de `highlightText` resaltadas. No permite editar ni escribir el archivo:
+/// cualquier cambio real pasa siempre por el flujo de reemplazo con confirmación y backup.
+struct FileContentPreviewView: View {
+    let hit: SearchHit
+    let content: String?
+    let errorMessage: String?
+    let isLoading: Bool
+    let highlightText: String
+    let onRevealInFinder: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            Divider()
+            contentBody
+            Divider()
+            footer
+        }
+        .frame(minWidth: 640, idealWidth: 780, minHeight: 480, idealHeight: 620)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(hit.relativePath)
+                    .font(.headline.weight(.bold))
+                    .lineLimit(2)
+
+                Spacer()
+
+                Text("\(hit.count) coincidencia(s)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(ReplacerTheme.blue)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(ReplacerTheme.blue.opacity(0.10))
+                    .clipShape(Capsule())
+            }
+
+            Text(hit.fileURL.path)
+                .font(.caption)
+                .foregroundStyle(ReplacerTheme.muted)
+                .textSelection(.enabled)
+                .lineLimit(2)
+        }
+        .padding(18)
+    }
+
+    @ViewBuilder
+    private var contentBody: some View {
+        Group {
+            if isLoading {
+                ProgressView("Cargando contenido…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let errorMessage {
+                VStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 34))
+                        .foregroundStyle(ReplacerTheme.amber)
+                    Text(errorMessage)
+                        .font(.callout)
+                        .foregroundStyle(ReplacerTheme.ink)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 480)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(24)
+            } else if let content {
+                ReadOnlyHighlightedTextView(content: content, highlightText: highlightText)
+            } else {
+                Color.clear
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var footer: some View {
+        HStack {
+            Button("Mostrar en Finder", action: onRevealInFinder)
+                .buttonStyle(SoftButtonStyle())
+
+            Spacer()
+
+            Button("Cerrar", action: onClose)
+                .buttonStyle(SoftButtonStyle())
+        }
+        .padding(18)
+    }
+}
+
+/// `NSTextView` de solo lectura que resalta cada aparición de `highlightText` en `content`.
+/// Limita el resaltado a las primeras `maxHighlights` coincidencias para no penalizar
+/// el render en archivos con miles de apariciones.
+struct ReadOnlyHighlightedTextView: NSViewRepresentable {
+    let content: String
+    let highlightText: String
+    let maxHighlights = 500
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSTextView.scrollableTextView()
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.hasVerticalScroller = true
+
+        guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.drawsBackground = false
+        textView.textContainerInset = NSSize(width: 10, height: 10)
+        textView.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+        apply(to: textView)
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let textView = nsView.documentView as? NSTextView else { return }
+        apply(to: textView)
+    }
+
+    private func apply(to textView: NSTextView) {
+        // `content`/`highlightText` no cambian durante la vida de esta vista; evita recalcular
+        // el resaltado (y perder la posición de scroll o la selección) en cada redibujado de SwiftUI.
+        guard textView.string != content else { return }
+
+        let attributed = NSMutableAttributedString(
+            string: content,
+            attributes: [
+                .font: NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular),
+                .foregroundColor: NSColor.labelColor
+            ]
+        )
+
+        if !highlightText.isEmpty {
+            let nsContent = content as NSString
+            var searchRange = NSRange(location: 0, length: nsContent.length)
+            var highlighted = 0
+
+            while highlighted < maxHighlights {
+                let found = nsContent.range(of: highlightText, options: [], range: searchRange)
+                guard found.location != NSNotFound else { break }
+
+                attributed.addAttribute(.backgroundColor, value: NSColor.systemYellow.withAlphaComponent(0.55), range: found)
+                highlighted += 1
+
+                let nextLocation = found.location + found.length
+                guard nextLocation < nsContent.length else { break }
+                searchRange = NSRange(location: nextLocation, length: nsContent.length - nextLocation)
+            }
+        }
+
+        textView.textStorage?.setAttributedString(attributed)
     }
 }

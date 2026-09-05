@@ -99,6 +99,7 @@ Los tests usan archivos temporales y no modifican contenido real del repositorio
 
 - [Guía de la app macOS](docs/native-macos.md)
 - [Arquitectura](docs/ARCHITECTURE.md)
+- [Propuesta: localizar en Finder y previsualizar contenido](docs/FEATURE-locate-finder-preview.md)
 - [Desarrollo](docs/DEVELOPMENT.md)
 - [Pruebas](docs/TESTING.md)
 - [Testing humano](TESTING_HUMANO.md)

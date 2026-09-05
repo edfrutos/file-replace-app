@@ -183,6 +183,64 @@ struct FileReplaceServiceTests {
         #expect(FileManager.default.fileExists(atPath: backupURL.path) == false)
         #expect(try String(contentsOf: fileURL, encoding: .utf8) == "alpha")
     }
+
+    @Test("readFullContent returns the entire file, not just the match neighborhood")
+    func readFullContentReturnsWholeFile() throws {
+        let fixture = try TemporaryFixture()
+        let contents = "alpha\n" + String(repeating: "relleno\n", count: 50) + "alpha otra vez\n"
+        let fileURL = try fixture.write("app.py", contents: contents)
+
+        let service = FileReplaceService()
+        let read = try service.readFullContent(at: fileURL)
+
+        #expect(read == contents)
+    }
+
+    @Test("readFullContent throws readFailed when the file no longer exists")
+    func readFullContentThrowsWhenFileMissing() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("app.py", contents: "alpha")
+        try FileManager.default.removeItem(at: fileURL)
+
+        let service = FileReplaceService()
+        #expect(throws: FileReplaceError.self) {
+            _ = try service.readFullContent(at: fileURL)
+        }
+    }
+
+    @Test("readFullContent throws unsupportedFileType for binary content")
+    func readFullContentThrowsForBinaryContent() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.writeData("assets/logo.bin", data: Data([0x00, 0x01, 0x02]))
+
+        let service = FileReplaceService()
+        do {
+            _ = try service.readFullContent(at: fileURL)
+            Issue.record("readFullContent debería haber lanzado un error para contenido binario")
+        } catch let error as FileReplaceError {
+            guard case .unsupportedFileType = error else {
+                Issue.record("Se esperaba .unsupportedFileType, se obtuvo \(error)")
+                return
+            }
+        }
+    }
+
+    @Test("readFullContent throws fileTooLarge above the given byte limit")
+    func readFullContentThrowsWhenTooLarge() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("big.txt", contents: String(repeating: "needle ", count: 2000))
+
+        let service = FileReplaceService()
+        do {
+            _ = try service.readFullContent(at: fileURL, maxBytes: 64)
+            Issue.record("readFullContent debería haber lanzado un error por tamaño")
+        } catch let error as FileReplaceError {
+            guard case .fileTooLarge = error else {
+                Issue.record("Se esperaba .fileTooLarge, se obtuvo \(error)")
+                return
+            }
+        }
+    }
 }
 
 private struct TemporaryFixture {
