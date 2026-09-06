@@ -10,7 +10,7 @@ Edita la constante en un único sitio:
 
 ```swift
 // Sources/FileReplaceCore/ReplacerBuildInfo.swift
-public static let version = "1.2.0"
+public static let version = "1.3.0"
 ```
 
 Si cambias el *build* del bundle, ajústalo en `scripts/build-macos-app.sh`

@@ -3,7 +3,7 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Este proyecto usa versionado semántico.
 
-## [Sin publicar]
+## [1.3.0] - 2026-09-06
 
 ### Añadido
 
@@ -18,6 +18,11 @@ Este proyecto usa versionado semántico.
   muestra el error correspondiente en vez del contenido.
 - `FileReplaceService.readFullContent(at:maxBytes:)`: nuevo método público que expone
   la lectura de texto UTF-8 estricto ya usada internamente por `search`.
+
+### Interno
+
+- Tests de `FileReplaceCore`: 14 (2 de `AppVersion`, 12 de `FileReplaceService`).
+- `build-macos-app.sh`: `CFBundleVersion` pasa a `4`.
 
 ## [1.2.0] - 2026-08-28
 
@@ -83,6 +88,7 @@ Distribución limitada para Apple Silicon. Firma ad-hoc, sin notarización.
 
 - Primera versión: app macOS SwiftUI con módulo core testeable y versión Flask heredada.
 
+[1.3.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.3.0
 [1.2.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.2.0
 [1.1.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.1.0
 [1.0.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.0.0

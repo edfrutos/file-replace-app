@@ -31,8 +31,8 @@ La configuración principal está en `Package.swift`:
 - Icono generado: `Assets/AppIcon/Replacer.icns`
 - Bundle identifier: `local.replacer.app`
 - Fuente de versión: `Sources/FileReplaceCore/ReplacerBuildInfo.swift` (`ReplacerBuildInfo.version`)
-- Versión mostrada actualmente: `1.2.0`
-- Build del bundle: `3`
+- Versión mostrada actualmente: `1.3.0`
+- Build del bundle: `4`
 - macOS mínimo del bundle: `14.0`
 - Firma: ad-hoc local con `codesign --sign -`
 

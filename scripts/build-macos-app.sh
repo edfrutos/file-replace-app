@@ -4,7 +4,7 @@ set -euo pipefail
 APP_NAME="Replacer"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION_FILE="$ROOT_DIR/Sources/FileReplaceCore/ReplacerBuildInfo.swift"
-BUNDLE_VERSION="3"
+BUNDLE_VERSION="4"
 DIST_DIR="$ROOT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
