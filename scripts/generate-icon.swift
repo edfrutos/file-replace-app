@@ -8,6 +8,23 @@ let assetsURL = rootURL
     .appendingPathComponent("Assets")
     .appendingPathComponent("AppIcon")
 let iconsetURL = assetsURL.appendingPathComponent("Replacer.iconset")
+let masterURL = assetsURL.appendingPathComponent("Replacer-master.png")
+
+guard let masterImage = NSImage(contentsOf: masterURL) else {
+    throw NSError(
+        domain: "ReplacerIcon",
+        code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "No se encontró el icono maestro en \(masterURL.path)"]
+    )
+}
+
+guard masterImage.size.width == masterImage.size.height else {
+    throw NSError(
+        domain: "ReplacerIcon",
+        code: 3,
+        userInfo: [NSLocalizedDescriptionKey: "El icono maestro debe ser cuadrado (actual: \(masterImage.size))"]
+    )
+}
 
 try FileManager.default.createDirectory(at: iconsetURL, withIntermediateDirectories: true)
 
@@ -24,88 +41,20 @@ let iconFiles: [(String, CGFloat)] = [
     ("icon_512x512@2x.png", 1024)
 ]
 
-func drawIcon(size: CGFloat) -> NSImage {
-    let image = NSImage(size: NSSize(width: size, height: size))
-    image.lockFocus()
-    defer { image.unlockFocus() }
+func resizedIcon(from source: NSImage, size: CGFloat) -> NSImage {
+    let target = NSImage(size: NSSize(width: size, height: size))
+    target.lockFocus()
+    defer { target.unlockFocus() }
 
-    let rect = NSRect(x: 0, y: 0, width: size, height: size)
-    NSColor.clear.setFill()
-    rect.fill()
-
-    let cornerRadius = size * 0.225
-    let backgroundRect = rect.insetBy(dx: size * 0.055, dy: size * 0.055)
-    let backgroundPath = NSBezierPath(roundedRect: backgroundRect, xRadius: cornerRadius, yRadius: cornerRadius)
-    let gradient = NSGradient(colors: [
-        NSColor(calibratedRed: 0.08, green: 0.27, blue: 0.82, alpha: 1),
-        NSColor(calibratedRed: 0.00, green: 0.72, blue: 0.64, alpha: 1)
-    ])
-    gradient?.draw(in: backgroundPath, angle: 135)
-
-    NSColor.black.withAlphaComponent(0.18).setStroke()
-    backgroundPath.lineWidth = max(1, size * 0.015)
-    backgroundPath.stroke()
-
-    let documentRect = NSRect(
-        x: size * 0.25,
-        y: size * 0.22,
-        width: size * 0.38,
-        height: size * 0.56
+    NSGraphicsContext.current?.imageInterpolation = .high
+    source.draw(
+        in: NSRect(x: 0, y: 0, width: size, height: size),
+        from: .zero,
+        operation: .copy,
+        fraction: 1.0
     )
-    let documentPath = NSBezierPath(roundedRect: documentRect, xRadius: size * 0.045, yRadius: size * 0.045)
-    NSColor.white.withAlphaComponent(0.94).setFill()
-    documentPath.fill()
 
-    let foldPath = NSBezierPath()
-    foldPath.move(to: NSPoint(x: documentRect.maxX - size * 0.13, y: documentRect.maxY))
-    foldPath.line(to: NSPoint(x: documentRect.maxX, y: documentRect.maxY - size * 0.13))
-    foldPath.line(to: NSPoint(x: documentRect.maxX - size * 0.13, y: documentRect.maxY - size * 0.13))
-    foldPath.close()
-    NSColor(calibratedRed: 0.78, green: 0.88, blue: 1.0, alpha: 1).setFill()
-    foldPath.fill()
-
-    NSColor(calibratedRed: 0.08, green: 0.27, blue: 0.82, alpha: 0.75).setStroke()
-    for index in 0..<3 {
-        let y = documentRect.maxY - size * (0.22 + CGFloat(index) * 0.12)
-        let line = NSBezierPath()
-        line.move(to: NSPoint(x: documentRect.minX + size * 0.09, y: y))
-        line.line(to: NSPoint(x: documentRect.maxX - size * 0.09, y: y))
-        line.lineWidth = max(1.5, size * 0.026)
-        line.lineCapStyle = .round
-        line.stroke()
-    }
-
-    let lensRect = NSRect(
-        x: size * 0.54,
-        y: size * 0.22,
-        width: size * 0.21,
-        height: size * 0.21
-    )
-    let lens = NSBezierPath(ovalIn: lensRect)
-    NSColor.white.setStroke()
-    lens.lineWidth = max(2.5, size * 0.045)
-    lens.stroke()
-
-    let handle = NSBezierPath()
-    handle.move(to: NSPoint(x: lensRect.maxX - size * 0.015, y: lensRect.minY + size * 0.015))
-    handle.line(to: NSPoint(x: size * 0.83, y: size * 0.13))
-    handle.lineCapStyle = .round
-    handle.lineWidth = max(2.5, size * 0.045)
-    handle.stroke()
-
-    let arrow = NSBezierPath()
-    arrow.move(to: NSPoint(x: size * 0.28, y: size * 0.18))
-    arrow.line(to: NSPoint(x: size * 0.47, y: size * 0.18))
-    arrow.line(to: NSPoint(x: size * 0.42, y: size * 0.13))
-    arrow.move(to: NSPoint(x: size * 0.47, y: size * 0.18))
-    arrow.line(to: NSPoint(x: size * 0.42, y: size * 0.23))
-    NSColor.white.withAlphaComponent(0.9).setStroke()
-    arrow.lineWidth = max(2, size * 0.03)
-    arrow.lineCapStyle = .round
-    arrow.lineJoinStyle = .round
-    arrow.stroke()
-
-    return image
+    return target
 }
 
 func writePNG(_ image: NSImage, to url: URL) throws {
@@ -121,7 +70,7 @@ func writePNG(_ image: NSImage, to url: URL) throws {
 }
 
 for (filename, size) in iconFiles {
-    try writePNG(drawIcon(size: size), to: iconsetURL.appendingPathComponent(filename))
+    try writePNG(resizedIcon(from: masterImage, size: size), to: iconsetURL.appendingPathComponent(filename))
 }
 
 let iconutil = Process()
@@ -140,4 +89,4 @@ if iconutil.terminationStatus != 0 {
     throw NSError(domain: "ReplacerIcon", code: Int(iconutil.terminationStatus), userInfo: [NSLocalizedDescriptionKey: "iconutil no pudo generar Replacer.icns"])
 }
 
-print("Icono generado en \(assetsURL.path)")
+print("Icono generado a partir de \(masterURL.lastPathComponent) en \(assetsURL.path)")

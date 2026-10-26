@@ -27,11 +27,13 @@ struct FileReplaceApp: App {
         .windowStyle(.titleBar)
         .commands {
             CommandGroup(replacing: .newItem) { }
+            #if !APPSTORE_BUILD
             CommandGroup(after: .appInfo) {
                 Button("Buscar actualizaciones…") {
                     UpdateCenter.presentUpdateOptions()
                 }
             }
+            #endif
         }
     }
 }

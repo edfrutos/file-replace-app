@@ -105,6 +105,8 @@ Los tests usan archivos temporales y no modifican contenido real del repositorio
 - [Testing humano](TESTING_HUMANO.md)
 - [Configuración](docs/CONFIGURATION.md)
 - [Publicar una release](docs/RELEASING.md)
+- [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md)
+- [Política de privacidad](PRIVACY.md)
 - [Cambios](CHANGELOG.md)
 - [API heredada Flask](docs/API.md)
 

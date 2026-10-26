@@ -443,6 +443,10 @@ struct ContentView: View {
 
 struct UpdatesButton: View {
     var body: some View {
+        #if APPSTORE_BUILD
+        // La App Store gestiona las actualizaciones; no se ofrece un enlace externo.
+        EmptyView()
+        #else
         Button {
             UpdateCenter.presentUpdateOptions()
         } label: {
@@ -451,6 +455,7 @@ struct UpdatesButton: View {
         .buttonStyle(.bordered)
         .controlSize(.small)
         .help("Versión \(ReplacerVersion.current.description). Consultar releases privadas")
+        #endif
     }
 }
 
@@ -471,6 +476,10 @@ struct SidebarView: View {
                     }
                     .buttonStyle(SoftButtonStyle())
 
+                    #if !APPSTORE_BUILD
+                    // El App Sandbox solo concede acceso a rutas elegidas mediante
+                    // NSOpenPanel; una ruta escrita a mano no tiene ese permiso, así
+                    // que este atajo se omite en el build de App Store.
                     HStack(spacing: 8) {
                         TextField("~/ruta/al/proyecto", text: $viewModel.directoryPathInput)
                             .textFieldStyle(.roundedBorder)
@@ -487,6 +496,7 @@ struct SidebarView: View {
                     Text("Escribe o pega una ruta y pulsa «Usar» (o Intro). También puedes usar el botón de arriba.")
                         .font(.caption2)
                         .foregroundStyle(ReplacerTheme.muted)
+                    #endif
 
                     Text(viewModel.directoryURL?.path ?? "Sin directorio seleccionado")
                         .font(.caption)

@@ -17,8 +17,9 @@ dist/
 *.dmg
 *.zip
 
-# Generated icon outputs; source is scripts/generate-icon.swift
-Assets/AppIcon/
+# Generated icon outputs; source is scripts/generate-icon.swift + Replacer-master.png
+Assets/AppIcon/*
+!Assets/AppIcon/Replacer-master.png
 
 # Generated repository/context exports
 repomix-output.xml
