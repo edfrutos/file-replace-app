@@ -61,3 +61,6 @@ temp/
 *.replacer-backup
 *.replacer-backup-*
 Icon?
+
+# Xcode per-user state (Replacer/Replacer.xcodeproj)
+xcuserdata/

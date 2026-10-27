@@ -41,28 +41,45 @@ let iconFiles: [(String, CGFloat)] = [
     ("icon_512x512@2x.png", 1024)
 ]
 
-func resizedIcon(from source: NSImage, size: CGFloat) -> NSImage {
-    let target = NSImage(size: NSSize(width: size, height: size))
-    target.lockFocus()
-    defer { target.unlockFocus() }
+// Dibuja directamente sobre un NSBitmapImageRep de tamaño en píxeles exacto.
+// `NSImage(size:) + lockFocus()` respeta el factor Retina de la pantalla que
+// ejecuta el script (normalmente 2x), duplicando el tamaño real de cada PNG
+// respecto al que indica su nombre de archivo — por eso no se usa aquí.
+// `samplesPerPixel: 3, hasAlpha: false` fuerza además un PNG sin canal alfa,
+// que es lo que exige Xcode para los iconos de App Store.
+func resizedIcon(from source: NSImage, pixels: Int) throws -> NSBitmapImageRep {
+    guard let rep = NSBitmapImageRep(
+        bitmapDataPlanes: nil,
+        pixelsWide: pixels,
+        pixelsHigh: pixels,
+        bitsPerSample: 8,
+        samplesPerPixel: 3,
+        hasAlpha: false,
+        isPlanar: false,
+        colorSpaceName: .deviceRGB,
+        bytesPerRow: 0,
+        bitsPerPixel: 0
+    ) else {
+        throw NSError(domain: "ReplacerIcon", code: 4, userInfo: [NSLocalizedDescriptionKey: "No se pudo crear el bitmap de \(pixels)px"])
+    }
 
-    NSGraphicsContext.current?.imageInterpolation = .high
-    source.draw(
-        in: NSRect(x: 0, y: 0, width: size, height: size),
-        from: .zero,
-        operation: .copy,
-        fraction: 1.0
-    )
+    NSGraphicsContext.saveGraphicsState()
+    defer { NSGraphicsContext.restoreGraphicsState() }
 
-    return target
+    let context = NSGraphicsContext(bitmapImageRep: rep)
+    NSGraphicsContext.current = context
+    context?.imageInterpolation = .high
+
+    let rect = NSRect(x: 0, y: 0, width: pixels, height: pixels)
+    NSColor.white.setFill()
+    rect.fill()
+    source.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1.0)
+
+    return rep
 }
 
-func writePNG(_ image: NSImage, to url: URL) throws {
-    guard
-        let tiffData = image.tiffRepresentation,
-        let bitmap = NSBitmapImageRep(data: tiffData),
-        let pngData = bitmap.representation(using: .png, properties: [:])
-    else {
+func writePNG(_ rep: NSBitmapImageRep, to url: URL) throws {
+    guard let pngData = rep.representation(using: .png, properties: [:]) else {
         throw NSError(domain: "ReplacerIcon", code: 1, userInfo: [NSLocalizedDescriptionKey: "No se pudo crear PNG"])
     }
 
@@ -70,7 +87,8 @@ func writePNG(_ image: NSImage, to url: URL) throws {
 }
 
 for (filename, size) in iconFiles {
-    try writePNG(resizedIcon(from: masterImage, size: size), to: iconsetURL.appendingPathComponent(filename))
+    let rep = try resizedIcon(from: masterImage, pixels: Int(size))
+    try writePNG(rep, to: iconsetURL.appendingPathComponent(filename))
 }
 
 let iconutil = Process()
