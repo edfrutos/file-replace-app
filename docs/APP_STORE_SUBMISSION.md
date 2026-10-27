@@ -45,7 +45,11 @@ Antes de tocar Xcode, resuelve esto en developer.apple.com / App Store Connect:
    tú mismo en el formulario de App Store Connect antes de enviar.
 6. **Capturas de pantalla**: tamaños Mac requeridos por App Store Connect en el
    momento de la subida (suele pedir al menos 1280×800 o 2560×1600). Tómalas de
-   la app ya corriendo con datos de ejemplo, no de mockups.
+   la app ya corriendo con datos de ejemplo, no de mockups. Usa
+   `scripts/captura-appstore.sh <nombre>`: deja la ventana en 1440×900 puntos
+   y guarda `~/Desktop/appstore-<nombre>.png` a 2880×1800 px (Retina), un
+   tamaño 16:10 que App Store Connect acepta. Capturas a mano con ⇧⌘4 salen con
+   tamaños arbitrarios (p. ej. 2308×1438) y se rechazan.
 
 ## 1. Crear el registro en App Store Connect
 
@@ -57,64 +61,169 @@ macOS) usando ese bundle ID, nombre, SKU e idioma principal.
 
 SwiftPM abierto directamente en Xcode **no** expone la pestaña "Signing &
 Capabilities" por target, así que no se puede firmar para distribución ni añadir
-App Sandbox sobre el `Package.swift` tal cual. Hace falta un `.xcodeproj` real:
+App Sandbox sobre el `Package.swift` tal cual. Hace falta un `.xcodeproj` real.
+Asumiendo que ya tienes `Replacer.provisionprofile`, `app.cer` e `installer.cer`
+generados en el portal de Developer (firma manual, no automática):
 
-1. Xcode → *File ▸ New ▸ Project ▸ macOS ▸ App*. Nombre `Replacer`, interfaz
-   SwiftUI, lenguaje Swift, "Include Tests" desmarcado (ya existen en
-   `Tests/FileReplaceCoreTests` dentro del package). Guárdalo en una carpeta
-   nueva, por ejemplo `ios/` o `xcode/` dentro del repo, o en un directorio
-   hermano — como prefieras, pero no lo guardes dentro de `Sources/`.
-2. Borra el `ContentView.swift`/`App.swift` que genera la plantilla.
-3. *File ▸ Add Package Dependencies ▸ Add Local…* y selecciona la carpeta raíz
-   del repo (donde está `Package.swift`). Añade el producto de librería
-   **FileReplaceCore** al target `Replacer` (NO añadas el producto ejecutable
-   `Replacer` del Package — ese es el binario SwiftPM para `swift run`/DMG, no se
-   usa aquí).
-4. Arrastra a ese target, con "Create groups" y sin copiar (para no duplicar
-   archivos), estos ficheros existentes:
-   - `Sources/FileReplaceApp/FileReplaceApp.swift`
-   - `Sources/FileReplaceApp/ContentView.swift`
-   - `Sources/FileReplaceApp/UpdateCenter.swift` (opcional: bajo
-     `APPSTORE_BUILD` queda inerte; puedes omitirlo del target si prefieres no
-     arrastrarlo, ya que ningún call site activo lo necesita en este build)
-   - `Sources/FileReplaceApp/Replacer.entitlements`
-5. Target `Replacer` ▸ *Signing & Capabilities*:
-   - Team: tu cuenta de Developer.
-   - Bundle Identifier: el registrado en el paso 0.2.
-   - *+ Capability ▸ App Sandbox*. Marca **User Selected File ▸ Read/Write**
-     (coincide con el entitlement ya escrito en `Replacer.entitlements`; Xcode
-     puede regenerar el archivo de entitlements él mismo al añadir la capability
-     — si lo hace, compara que quede igual al que ya está en el repo).
-6. Target `Replacer` ▸ *Build Settings*:
-   - `macOS Deployment Target`: 14.0 (coincide con `Package.swift`).
-   - `Active Compilation Conditions`: añade `APPSTORE_BUILD` (en Release al
-     menos; puedes ponerlo también en Debug si vas a probar este target).
-   - Info.plist: `CFBundleDisplayName` = Replacer, versión = la de
-     `Sources/FileReplaceCore/ReplacerBuildInfo.swift` (mantenla sincronizada a
-     mano entre `ReplacerBuildInfo.version` y el "Marketing Version" del target;
-     no hay script compartido entre el build SwiftPM y este target de Xcode).
-7. Icono: añade un *Asset Catalog* `Assets.xcassets` con un `AppIcon` set y
-   genera los tamaños requeridos (16–1024pt @1x/@2x) a partir de
-   `Assets/AppIcon/Replacer.icns` o de `Replacer.png`/`Replacer-yellow.png` en la
-   raíz del repo. `scripts/generate-icon.swift` dibuja el icono en código; si
-   quieres reutilizar ese dibujo para los PNG de cada tamaño en vez de partir de
-   un .icns ya existente, dime y preparo una variante del script que exporte el
-   set completo de PNGs.
-8. Compila (`Cmd+B`) y corre (`Cmd+R`) en Xcode para confirmar que todo enlaza y
-   que el flujo de selección de carpeta + búsqueda + reemplazo funciona igual que
-   en el bundle DMG. Prueba también casos límite de sandbox: carpetas fuera de
-   `~/Documents`/`~/Desktop` (requieren pasar siempre por el panel, nunca por una
-   ruta recordada), y confirma que no aparece ni el campo de ruta escrita ni el
-   botón de actualizaciones.
+### 2.1 Instalar el certificado y el perfil antes de abrir Xcode
+
+1. Doble clic en `app.cer` (y en `installer.cer` si vas a subir también un
+   instalador) → se añaden a Keychain Access. Esto solo firma correctamente si
+   el par de claves privadas generado junto con el CSR original también está en
+   tu llavero — si Keychain Access no muestra una flecha desplegable junto al
+   certificado con una clave privada dentro, el certificado no servirá para
+   firmar y hay que regenerarlo desde un CSR creado en este mismo Mac.
+2. Doble clic en `Replacer.provisionprofile` → macOS lo instala en
+   `~/Library/MobileDevice/Provisioning Profiles/`. Xcode lo detectará luego
+   automáticamente en el selector de perfiles.
+
+### 2.2 Asistente "New Project"
+
+1. Abre Xcode. En la pantalla de bienvenida, botón **Create New Project...**
+   (o, con Xcode ya abierto, `File ▸ New ▸ Project…`, `⇧⌘N`).
+2. Pestaña superior **macOS** (no iOS). En la sección "Application", selecciona
+   la plantilla **App** (el icono con una ventana). Clic **Next**.
+3. Formulario de opciones del proyecto:
+   - **Product Name**: `Replacer`
+   - **Team**: tu cuenta de Developer (si no aparece, añádela antes en
+     `Xcode ▸ Settings… ▸ Accounts ▸ +`)
+   - **Organization Identifier**: el prefijo reverse-DNS que ya usaste al
+     registrar el App ID en el portal (por ejemplo `com.edfrutos`). Junto con
+     el Product Name, Xcode compondrá el Bundle Identifier
+     `com.edfrutos.Replacer` — debe coincidir exactamente con el App ID ligado
+     a tu `Replacer.provisionprofile`; si no coincide, lo corriges luego en el
+     paso 2.4.
+   - **Interface**: `SwiftUI`
+   - **Language**: `Swift`
+   - **Storage**: `None`
+   - **Include Tests**: desmarcado (ya existen en `Tests/FileReplaceCoreTests`
+     dentro del paquete SwiftPM)
+   Clic **Next**.
+4. Diálogo de guardado: navega a la raíz del repo (`file-replace-app/`) y
+   guarda ahí (creará una carpeta `Replacer/` con el `.xcodeproj` dentro — no
+   lo metas en `Sources/`). Si aparece la casilla **Create Git repository on my
+   Mac**, desmárcala (el repo ya existe). Clic **Create**.
+
+### 2.3 Limpiar la plantilla y enganchar el código existente
+
+1. En el Project Navigator (panel izquierdo, icono de carpeta), dentro del
+   grupo amarillo `Replacer`, verás `ReplacerApp.swift` y `ContentView.swift`
+   generados por la plantilla. Click derecho sobre cada uno ▸ **Delete** ▸
+   **Move to Trash** (los sustituimos por el código real de la app).
+2. Añadir `FileReplaceCore` como dependencia local: selecciona el proyecto
+   (icono azul de Xcode, arriba del todo en el Navigator) ▸ en el editor
+   central, con el proyecto `Replacer` (no el target) seleccionado en la
+   columna izquierda, abre la pestaña superior **Package Dependencies** ▸ clic
+   en el botón **+** debajo de la lista ▸ en el diálogo, botón
+   **Add Local…** (abajo a la izquierda) ▸ navega hasta la raíz del repo
+   (donde está `Package.swift`) y selecciona esa carpeta ▸ **Add Package**.
+3. Aparece un diálogo "Choose Package Products": marca solo **FileReplaceCore**
+   con "Add to Target" = `Replacer` (NO marques el producto ejecutable
+   `Replacer` del propio Package — ese es el binario de `swift run`/DMG, no se
+   usa aquí). Clic **Add Package**.
+4. En Finder, abre la carpeta del repo y arrastra estos archivos desde
+   `Sources/FileReplaceApp/` hasta el grupo `Replacer` en el Project Navigator
+   de Xcode:
+   - `FileReplaceApp.swift`
+   - `ContentView.swift`
+   - `Replacer.entitlements`
+   - (opcional) `UpdateCenter.swift` — bajo `APPSTORE_BUILD` queda inerte, así
+     que puedes omitirlo si prefieres no arrastrarlo.
+   En el diálogo que aparece al soltar: **desmarca** "Copy items if needed"
+   (así Xcode referencia los ficheros originales en vez de duplicarlos),
+   "Added folders" = **Create groups**, y en "Add to targets" marca `Replacer`.
+   Clic **Finish**.
+
+### 2.4 Firma y App Sandbox
+
+Selecciona el target `Replacer` (no el proyecto) en la columna izquierda del
+editor central, pestaña **Signing & Capabilities**:
+
+1. **Team**: tu cuenta de Developer.
+2. **Bundle Identifier**: escribe exactamente el App ID registrado (el ligado
+   a tu provisioning profile), sobrescribiendo el que generó el asistente si
+   no coincide.
+3. Desmarca **Automatically manage signing** (ya tienes perfil y certificados
+   generados manualmente).
+4. **Provisioning Profile**: despliega el selector ▸ debería aparecer
+   `Replacer.provisionprofile` ya instalado (paso 2.1); si no aparece, usa la
+   opción **Import Profile…** del mismo desplegable y selecciona el archivo.
+5. **Signing Certificate**: debería autoseleccionarse al elegir el perfil, ya
+   que ambos están ligados al mismo App ID. Si Xcode marca error de "no
+   matching signing identity", vuelve a Keychain Access y confirma que el
+   certificado tiene su clave privada asociada (paso 2.1).
+6. Clic en **+ Capability** (arriba a la izquierda de esta pestaña) ▸
+   doble clic en **App Sandbox** para añadirlo.
+7. En el recuadro "App Sandbox" que aparece, en la sección **File Access**,
+   marca la fila **User Selected File** y pon su desplegable en **Read/Write**.
+8. Comprueba el archivo de entitlements resultante: ve a la pestaña
+   **Build Settings** del target, busca `Code Signing Entitlements` y confirma
+   que apunta a `Sources/FileReplaceApp/Replacer.entitlements` (el que ya está
+   en el repo). Si Xcode creó uno nuevo en la carpeta del proyecto al añadir la
+   capability, ábrelo como texto y compáralo: debe tener exactamente
+   `com.apple.security.app-sandbox` y
+   `com.apple.security.files.user-selected.read-write` a `true`; si coincide,
+   puedes quedarte con cualquiera de los dos y borrar el duplicado.
+
+### 2.5 Ajustes de build
+
+Sigue en el target `Replacer`:
+
+1. Pestaña **Build Settings** ▸ busca `macOS Deployment Target` ▸ ponlo a
+   `14.0` (coincide con `Package.swift`).
+2. Misma pestaña ▸ busca `Active Compilation Conditions` ▸ doble clic en el
+   valor de la fila `Release` (y de `Debug` si vas a probar este target antes
+   de archivar) ▸ añade `APPSTORE_BUILD`.
+3. Pestaña **General** ▸ sección "Identity":
+   - **Display Name**: `Replacer`
+   - **Version** (Marketing Version / `CFBundleShortVersionString`): `1.3.0`,
+     igual que `Sources/FileReplaceCore/ReplacerBuildInfo.swift`. No hay script
+     compartido entre el build SwiftPM y este target de Xcode, así que toca
+     mantenerlo sincronizado a mano en cada release.
+   - **Build** (`CFBundleVersion`): un entero, por ejemplo `1` para esta primera
+     subida (numeración independiente del `BUNDLE_VERSION` del DMG).
+
+### 2.6 Icono
+
+1. En el Project Navigator debería existir ya `Assets.xcassets` (lo crea la
+   plantilla) con un icono `AppIcon` vacío. Ábrelo con doble clic.
+2. En tu Mac, ejecuta primero `swift scripts/generate-icon.swift` desde la
+   raíz del repo para regenerar `Assets/AppIcon/Replacer.iconset/` con
+   `iconutil` (el que hay ahora mismo en el repo se generó desde este sandbox
+   Linux con Pillow como aproximación; conviene regenerarlo una vez en tu Mac
+   para tener el `.icns` oficial).
+3. Arrastra cada PNG de `Assets/AppIcon/Replacer.iconset/` al hueco de tamaño
+   correspondiente del set `AppIcon` (16, 32, 128, 256, 512 pt en @1x/@2x). Si
+   tu versión de Xcode usa el modo "Single Size" para macOS, basta con
+   arrastrar `icon_512x512@2x.png` (1024×1024) al único hueco disponible.
+
+### 2.7 Compilar y probar
+
+`Cmd+B` para compilar y `Cmd+R` para ejecutar. Verifica que:
+
+- La app arranca y el flujo de selección de carpeta + búsqueda + reemplazo
+  funciona igual que en el bundle DMG.
+- **No** aparece el campo de ruta escrita a mano ni el botón "Actualizaciones"
+  (confirma que `APPSTORE_BUILD` se aplicó).
+- Probar sandbox real: elige una carpeta fuera de `~/Documents`/`~/Desktop`
+  (p. ej. en `~/Developer`) únicamente a través del panel nativo — nunca
+  funcionará una ruta recordada de sesiones anteriores, porque el sandbox no
+  persiste permisos entre lanzamientos en esta versión.
 
 ## 3. Archivar y subir
 
-1. Selecciona el scheme `Replacer` ▸ destino "Any Mac" ▸ *Product ▸ Archive*.
-2. En el Organizer, *Distribute App ▸ App Store Connect ▸ Upload*. Xcode gestiona
-   el certificado de distribución y el perfil de aprovisionamiento si "Automatically
-   manage signing" está activo.
-3. Espera a que App Store Connect termine de procesar el build (recibirás aviso
-   por correo o lo verás en la pestaña TestFlight/Build del app record).
+1. En la barra superior de Xcode, junto al selector de scheme, cambia el
+   destino de ejecución a **My Mac** (no un simulador).
+2. `Product ▸ Archive` (menú superior). Xcode compila en Release y, al
+   terminar, abre automáticamente la ventana **Organizer**.
+3. En Organizer, con el archive recién creado seleccionado, botón
+   **Distribute App** ▸ **App Store Connect** ▸ **Upload** ▸ **Next**.
+4. En la pantalla de opciones de firma, como tienes signing manual, elige
+   **Manually manage signing** ▸ selecciona el mismo perfil/certificado del
+   paso 2.4 ▸ **Next** ▸ **Upload**.
+5. Espera a que App Store Connect termine de procesar el build (aviso por
+   correo, o visible en la pestaña **TestFlight**/**Compilación** del app
+   record — puede tardar de varios minutos a más de una hora).
 
 ## 4. Completar la ficha y enviar a revisión
 
