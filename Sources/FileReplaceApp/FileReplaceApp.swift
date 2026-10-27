@@ -5,6 +5,13 @@ import SwiftUI
 /// Fijar la política de activación y activarla mejora el foco de ventanas y
 /// paneles; aun así, el panel nativo de carpetas puede requerir la app empaquetada.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Replacer trabaja con una sola ventana (no hay «Nueva ventana»), así
+        // que se desactivan las pestañas de macOS y su barra. Debe fijarse
+        // antes de que se cree la primera ventana.
+        NSWindow.allowsAutomaticWindowTabbing = false
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
@@ -38,6 +45,17 @@ enum AppearanceMode: String, CaseIterable, Identifiable {
         case .system: return nil
         }
     }
+
+    /// `preferredColorScheme` solo afecta a las vistas SwiftUI; los paneles y
+    /// alertas de AppKit (NSOpenPanel, NSAlert) y la barra de título siguen la
+    /// apariencia de `NSApp`, así que también se fija ahí. `nil` = la del sistema.
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .light: return NSAppearance(named: .aqua)
+        case .dark: return NSAppearance(named: .darkAqua)
+        case .system: return nil
+        }
+    }
 }
 
 private let appearanceModeDefaultsKey = "replacerAppearanceMode"
@@ -56,6 +74,9 @@ struct FileReplaceApp: App {
             ContentView()
                 .frame(minWidth: 860, minHeight: 620)
                 .preferredColorScheme(appearanceMode.colorScheme)
+                .onChange(of: appearanceModeRaw, initial: true) {
+                    NSApp.appearance = appearanceMode.nsAppearance
+                }
         }
         .windowStyle(.titleBar)
         .commands {

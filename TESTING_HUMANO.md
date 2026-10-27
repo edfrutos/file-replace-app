@@ -185,6 +185,7 @@ Aceptación:
 - [x] Al subir el slider a 3 y **volver a pulsar** `Buscar coincidencias`, sí aparece.
 - [ ] La barra de resultados permite `Seleccionar todo`, `Deseleccionar todo` y `Limpiar resultados` (este último vacía la lista y vuelve al estado inicial sin perder directorio ni textos).
 - [ ] Tras «Reemplazar seleccionados», la lista se actualiza sola con el contenido nuevo (si el reemplazo no contiene el texto buscado, queda vacía y el registro de reemplazos sigue visible).
+- [ ] Con el sistema en modo oscuro y Ajustes en «Claro» (y al revés), el aviso de confirmación, el panel de carpetas y la barra de título siguen la apariencia elegida en la app, no la del sistema. No aparece barra de pestañas ni la opción de mostrarla.
 
 ## 9. Reemplazo parcial en recursivo
 
