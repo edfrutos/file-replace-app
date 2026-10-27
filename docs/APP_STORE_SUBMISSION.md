@@ -185,17 +185,16 @@ Sigue en el target `Replacer`:
 
 ### 2.6 Icono
 
-1. En el Project Navigator debería existir ya `Assets.xcassets` (lo crea la
-   plantilla) con un icono `AppIcon` vacío. Ábrelo con doble clic.
-2. En tu Mac, ejecuta primero `swift scripts/generate-icon.swift` desde la
-   raíz del repo para regenerar `Assets/AppIcon/Replacer.iconset/` con
-   `iconutil` (el que hay ahora mismo en el repo se generó desde este sandbox
-   Linux con Pillow como aproximación; conviene regenerarlo una vez en tu Mac
-   para tener el `.icns` oficial).
-3. Arrastra cada PNG de `Assets/AppIcon/Replacer.iconset/` al hueco de tamaño
-   correspondiente del set `AppIcon` (16, 32, 128, 256, 512 pt en @1x/@2x). Si
-   tu versión de Xcode usa el modo "Single Size" para macOS, basta con
-   arrastrar `icon_512x512@2x.png` (1024×1024) al único hueco disponible.
+El icono se dibuja en código: `scripts/generate-icon.swift` reproduce el
+glifo de la app (`AppGlyph` en `ContentView.swift`: degradado azul→verde
+azulado con `arrow.left.arrow.right` en blanco) y escribe a la vez
+`Assets/AppIcon/Replacer-master.png`, el `.iconset`/`.icns` del build DMG y
+los PNG de `Replacer/Replacer/Assets.xcassets/AppIcon.appiconset/`.
+
+En tu Mac, desde la raíz del repo, ejecuta `swift scripts/generate-icon.swift`
+cada vez que cambie el diseño (necesita AppKit: no funciona en Linux). No
+hace falta arrastrar nada en Xcode: el asset catalog ya referencia esos
+archivos.
 
 ### 2.7 Compilar y probar
 
