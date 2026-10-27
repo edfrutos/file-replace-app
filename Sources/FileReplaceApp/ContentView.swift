@@ -162,7 +162,15 @@ final class FileReplaceViewModel: ObservableObject {
         panel.message = "Elige la carpeta donde buscar"
 
         guard panel.runModal() == .OK, let url = panel.url else {
-            statusMessage = "Selección de carpeta cancelada o no disponible. Usa el campo de ruta."
+            // Con una carpeta ya elegida, cancelar no cambia nada: se conserva
+            // el estado de la búsqueda en curso.
+            if directoryURL == nil {
+                #if APPSTORE_BUILD
+                statusMessage = "Selección de carpeta cancelada. Pulsa «Seleccionar directorio» para elegir dónde buscar."
+                #else
+                statusMessage = "Selección de carpeta cancelada o no disponible. Usa el campo de ruta."
+                #endif
+            }
             return
         }
         applyDirectory(url)
