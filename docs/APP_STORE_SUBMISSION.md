@@ -199,6 +199,15 @@ Sigue en el target `Replacer`:
 
 ### 2.7 Compilar y probar
 
+Antes de nada, en el selector de scheme (barra superior de Xcode) elige
+**Replacer App Store**, no **Replacer**. El paquete SwiftPM tiene un producto
+ejecutable que también se llama `Replacer` y Xcode le crea un scheme con ese
+nombre: si lo ejecutas, arranca el binario de `swift run`/DMG, compilado sin
+`APPSTORE_BUILD` (verás el campo de ruta con «Usar» y el botón
+«Actualizaciones»). El scheme compartido
+`Replacer/Replacer.xcodeproj/xcshareddata/xcschemes/Replacer App Store.xcscheme`
+apunta al target de la app.
+
 `Cmd+B` para compilar y `Cmd+R` para ejecutar. Verifica que:
 
 - La app arranca y el flujo de selección de carpeta + búsqueda + reemplazo

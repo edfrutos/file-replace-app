@@ -300,6 +300,22 @@ final class FileReplaceViewModel: ObservableObject {
         selectedHitIDs = []
     }
 
+    /// Descarta los resultados de la búsqueda en curso y vuelve al estado
+    /// vacío, conservando el directorio y los textos de búsqueda/reemplazo
+    /// para poder relanzarla.
+    func clearResults() {
+        closePreview()
+        hits = []
+        selectedHitIDs = []
+        lastReport = nil
+        replacementLog = []
+        if let directoryURL {
+            statusMessage = "Directorio: \(directoryURL.path). Escribe el texto a buscar y pulsa «Buscar coincidencias»."
+        } else {
+            statusMessage = "Selecciona un directorio y define la búsqueda."
+        }
+    }
+
     /// Trae Finder a primer plano con `hit` ya seleccionado en su carpeta contenedora.
     /// No modifica ni crea nada en el filesystem.
     func revealInFinder(_ hit: SearchHit) {
@@ -487,10 +503,20 @@ struct ContentView: View {
             Button("Seleccionar todo") {
                 viewModel.selectAll()
             }
+            .disabled(viewModel.selectedHitIDs.count == viewModel.hits.count)
 
-            Button("Limpiar selección") {
+            Button("Deseleccionar todo") {
                 viewModel.clearSelection()
             }
+            .disabled(viewModel.selectedHitIDs.isEmpty)
+
+            Button(role: .destructive) {
+                viewModel.clearResults()
+            } label: {
+                Label("Limpiar resultados", systemImage: "xmark.circle")
+            }
+            .disabled(viewModel.isWorking)
+            .help("Descarta los resultados de esta búsqueda")
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
