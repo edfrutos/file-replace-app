@@ -1,16 +1,76 @@
 import AppKit
+import Combine
 import FileReplaceCore
 import SwiftUI
 
+/// Color que cambia según el modo de apariencia activo (claro u oscuro), sin
+/// depender de colores con nombre en un asset catalog — necesario porque este
+/// archivo se comparte, por symlink, entre el target de Xcode (App Store) y el
+/// ejecutable SwiftPM (`swift run` / DMG), y solo el primero empaqueta un
+/// asset catalog.
+private extension Color {
+    init(light: NSColor, dark: NSColor) {
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+        })
+    }
+}
+
 private enum ReplacerTheme {
-    static let ink = Color(red: 0.12, green: 0.15, blue: 0.20)
-    static let muted = Color(red: 0.45, green: 0.49, blue: 0.56)
-    static let paper = Color(red: 0.98, green: 0.96, blue: 0.92)
-    static let panel = Color(red: 1.00, green: 0.99, blue: 0.96)
-    static let blue = Color(red: 0.13, green: 0.36, blue: 0.92)
-    static let teal = Color(red: 0.00, green: 0.66, blue: 0.58)
-    static let amber = Color(red: 0.95, green: 0.61, blue: 0.18)
-    static let border = Color.black.opacity(0.08)
+    static let ink = Color(
+        light: NSColor(calibratedRed: 0.12, green: 0.15, blue: 0.20, alpha: 1),
+        dark: NSColor(calibratedRed: 0.93, green: 0.94, blue: 0.97, alpha: 1)
+    )
+    static let muted = Color(
+        light: NSColor(calibratedRed: 0.45, green: 0.49, blue: 0.56, alpha: 1),
+        dark: NSColor(calibratedRed: 0.64, green: 0.67, blue: 0.74, alpha: 1)
+    )
+    static let paper = Color(
+        light: NSColor(calibratedRed: 0.98, green: 0.96, blue: 0.92, alpha: 1),
+        dark: NSColor(calibratedRed: 0.09, green: 0.10, blue: 0.12, alpha: 1)
+    )
+    static let panel = Color(
+        light: NSColor(calibratedRed: 1.00, green: 0.99, blue: 0.96, alpha: 1),
+        dark: NSColor(calibratedRed: 0.15, green: 0.16, blue: 0.19, alpha: 1)
+    )
+    static let blue = Color(
+        light: NSColor(calibratedRed: 0.13, green: 0.36, blue: 0.92, alpha: 1),
+        dark: NSColor(calibratedRed: 0.42, green: 0.60, blue: 1.00, alpha: 1)
+    )
+    static let teal = Color(
+        light: NSColor(calibratedRed: 0.00, green: 0.66, blue: 0.58, alpha: 1),
+        dark: NSColor(calibratedRed: 0.30, green: 0.82, blue: 0.72, alpha: 1)
+    )
+    static let amber = Color(
+        light: NSColor(calibratedRed: 0.95, green: 0.61, blue: 0.18, alpha: 1),
+        dark: NSColor(calibratedRed: 1.00, green: 0.73, blue: 0.35, alpha: 1)
+    )
+    static let border = Color(
+        light: NSColor.black.withAlphaComponent(0.08),
+        dark: NSColor.white.withAlphaComponent(0.14)
+    )
+
+    /// Sustituye los fondos "blancos" fijos que había sueltos por el archivo
+    /// (tarjetas, cuadros de texto) por una superficie que se oscurece también.
+    static let surface = Color(
+        light: NSColor.white,
+        dark: NSColor(calibratedRed: 0.18, green: 0.19, blue: 0.23, alpha: 1)
+    )
+
+    /// Fondo suave para fragmentos de vista previa de texto.
+    static let tint = Color(
+        light: NSColor(calibratedRed: 0.96, green: 0.98, blue: 1.0, alpha: 1),
+        dark: NSColor(calibratedRed: 0.14, green: 0.18, blue: 0.24, alpha: 1)
+    )
+
+    static let sidebarGradientStart = Color(
+        light: NSColor(calibratedRed: 0.96, green: 0.98, blue: 1.0, alpha: 1),
+        dark: NSColor(calibratedRed: 0.08, green: 0.10, blue: 0.14, alpha: 1)
+    )
+    static let sidebarGradientEnd = Color(
+        light: NSColor(calibratedRed: 0.93, green: 0.97, blue: 0.95, alpha: 1),
+        dark: NSColor(calibratedRed: 0.07, green: 0.11, blue: 0.10, alpha: 1)
+    )
 
     static let accentGradient = LinearGradient(
         colors: [blue, teal],
@@ -349,10 +409,7 @@ struct ContentView: View {
 
     private var sidebarBackground: some View {
         LinearGradient(
-            colors: [
-                Color(red: 0.96, green: 0.98, blue: 1.0),
-                Color(red: 0.93, green: 0.97, blue: 0.95)
-            ],
+            colors: [ReplacerTheme.sidebarGradientStart, ReplacerTheme.sidebarGradientEnd],
             startPoint: .top,
             endPoint: .bottom
         )
@@ -385,7 +442,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
-        .background(.white.opacity(0.72))
+        .background(ReplacerTheme.surface.opacity(0.72))
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(ReplacerTheme.border)
@@ -437,7 +494,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
-        .background(.white.opacity(0.54))
+        .background(ReplacerTheme.surface.opacity(0.54))
     }
 }
 
@@ -505,7 +562,7 @@ struct SidebarView: View {
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(10)
-                        .background(Color.white.opacity(0.62))
+                        .background(ReplacerTheme.surface.opacity(0.62))
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
 
@@ -616,7 +673,7 @@ struct ControlGroupBox<Content: View>: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(.white.opacity(0.75), lineWidth: 1)
+                    .stroke(ReplacerTheme.surface.opacity(0.75), lineWidth: 1)
             )
         }
     }
@@ -670,7 +727,7 @@ struct PromptTextEditor: View {
                     .allowsHitTesting(false)
             }
         }
-        .background(Color.white)
+        .background(ReplacerTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 11, style: .continuous)
@@ -799,7 +856,7 @@ struct HitRow: View {
                             .lineLimit(4)
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(red: 0.96, green: 0.98, blue: 1.0))
+                            .background(ReplacerTheme.tint)
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                 }
@@ -835,7 +892,7 @@ struct HitRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(isSelected ? 0.96 : 0.78))
+                .fill(ReplacerTheme.surface.opacity(isSelected ? 0.96 : 0.78))
                 .shadow(color: Color.black.opacity(isSelected ? 0.10 : 0.05), radius: 16, y: 8)
         )
         .overlay(
@@ -862,7 +919,7 @@ struct ReplacementLogView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.76))
+        .background(ReplacerTheme.surface.opacity(0.76))
     }
 }
 
