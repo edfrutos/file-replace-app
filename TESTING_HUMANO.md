@@ -184,6 +184,7 @@ Aceptación:
 - [x] Con profundidad 1 no aparece `nivel1/nivel2/app.txt`.
 - [x] Al subir el slider a 3 y **volver a pulsar** `Buscar coincidencias`, sí aparece.
 - [ ] La barra de resultados permite `Seleccionar todo`, `Deseleccionar todo` y `Limpiar resultados` (este último vacía la lista y vuelve al estado inicial sin perder directorio ni textos).
+- [ ] Tras «Reemplazar seleccionados», la lista se actualiza sola con el contenido nuevo (si el reemplazo no contiene el texto buscado, queda vacía y el registro de reemplazos sigue visible).
 
 ## 9. Reemplazo parcial en recursivo
 

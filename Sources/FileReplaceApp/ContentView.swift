@@ -96,6 +96,16 @@ struct AppGlyph: View {
     }
 }
 
+/// Parámetros de una búsqueda, guardados para poder repetirla tal cual tras
+/// un reemplazo aunque el usuario haya editado los campos entretanto.
+private struct SearchQuery {
+    var directoryURL: URL?
+    var namePattern: String
+    var searchText: String
+    var recursive: Bool
+    var maxDepth: Int
+}
+
 private struct SearchOutcome: Sendable {
     var report: SearchReport?
     var errorMessage: String?
@@ -116,6 +126,7 @@ final class FileReplaceViewModel: ObservableObject {
     @Published var isWorking = false
     @Published var lastReport: SearchReport?
     @Published var replacementLog: [String] = []
+    private var lastQuery: SearchQuery?
 
     @Published var previewHit: SearchHit?
     @Published var previewContent: String?
@@ -184,23 +195,39 @@ final class FileReplaceViewModel: ObservableObject {
         hits = []
         selectedHitIDs = []
         lastReport = nil
+        lastQuery = nil
         replacementLog = []
         statusMessage = "Directorio: \(url.path). Escribe el texto a buscar y pulsa «Buscar coincidencias»."
     }
 
     func search() {
-        let dir = directoryURL
-        let pattern = namePattern
-        let text = searchText
-        let rec = recursive
-        let depth = Int(maxDepth)
+        let query = SearchQuery(
+            directoryURL: directoryURL,
+            namePattern: namePattern,
+            searchText: searchText,
+            recursive: recursive,
+            maxDepth: Int(maxDepth)
+        )
+        lastQuery = query
+        replacementLog = []
+        runSearch(query, statusPrefix: nil)
+    }
+
+    /// Ejecuta `query` y sustituye la lista de resultados. `statusPrefix` se
+    /// antepone al resumen (lo usa el refresco tras un reemplazo para no perder
+    /// el mensaje de «Reemplazo finalizado…»).
+    private func runSearch(_ query: SearchQuery, statusPrefix: String?) {
+        let dir = query.directoryURL
+        let pattern = query.namePattern
+        let text = query.searchText
+        let rec = query.recursive
+        let depth = query.maxDepth
         let service = self.service
 
         isWorking = true
-        replacementLog = []
         hits = []
         selectedHitIDs = []
-        statusMessage = "Buscando…"
+        statusMessage = statusPrefix.map { "\($0) Actualizando resultados…" } ?? "Buscando…"
 
         Task {
             let outcome: SearchOutcome = await Task.detached(priority: .userInitiated) {
@@ -223,20 +250,22 @@ final class FileReplaceViewModel: ObservableObject {
                 hits = report.hits
                 selectedHitIDs = []
 
-                var message = "\(report.hits.count) archivo(s) con coincidencias sobre \(report.filesScanned) revisado(s). Revisa y marca los archivos que quieras reemplazar."
+                var message = report.hits.isEmpty
+                    ? "Ninguna coincidencia en \(report.filesScanned) archivo(s) revisado(s)."
+                    : "\(report.hits.count) archivo(s) con coincidencias sobre \(report.filesScanned) revisado(s). Revisa y marca los archivos que quieras reemplazar."
                 if !report.skippedFiles.isEmpty {
                     message += " \(report.skippedFiles.count) omitido(s) (binario, no UTF-8 o demasiado grande)."
                 }
                 if report.reachedResultLimit {
                     message += " Se alcanzó el límite de resultados; acota con un filtro de nombre o menos profundidad."
                 }
-                statusMessage = message
+                statusMessage = statusPrefix.map { "\($0) \(message)" } ?? message
             } else {
                 let detail = outcome.errorMessage ?? "Error desconocido en la búsqueda."
                 hits = []
                 selectedHitIDs = []
                 lastReport = nil
-                statusMessage = detail
+                statusMessage = statusPrefix.map { "\($0) \(detail)" } ?? detail
             }
 
             isWorking = false
@@ -279,8 +308,15 @@ final class FileReplaceViewModel: ObservableObject {
             }.value
 
             replacementLog = lines
-            statusMessage = "Reemplazo finalizado en \(targets.count) archivo(s)."
-            isWorking = false
+            let summary = "Reemplazo finalizado en \(targets.count) archivo(s)."
+            // Repite la última búsqueda para que la lista refleje el contenido
+            // ya modificado en lugar de los fragmentos anteriores al reemplazo.
+            if let lastQuery {
+                runSearch(lastQuery, statusPrefix: summary)
+            } else {
+                statusMessage = summary
+                isWorking = false
+            }
         }
     }
 
@@ -308,6 +344,7 @@ final class FileReplaceViewModel: ObservableObject {
         hits = []
         selectedHitIDs = []
         lastReport = nil
+        lastQuery = nil
         replacementLog = []
         if let directoryURL {
             statusMessage = "Directorio: \(directoryURL.path). Escribe el texto a buscar y pulsa «Buscar coincidencias»."
@@ -547,7 +584,7 @@ struct SidebarView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 14) {
                 brandHeader
 
                 ControlGroupBox(title: "Ubicación", icon: "folder.fill") {
@@ -602,7 +639,7 @@ struct SidebarView: View {
                             text: $viewModel.searchText,
                             prompt: "Cadena exacta que quieres localizar"
                         )
-                        .frame(minHeight: 86)
+                        .frame(minHeight: 60)
                     }
 
                     LabeledInput(title: "Texto de reemplazo") {
@@ -610,7 +647,7 @@ struct SidebarView: View {
                             text: $viewModel.replacementText,
                             prompt: "Nuevo texto que se escribirá"
                         )
-                        .frame(minHeight: 86)
+                        .frame(minHeight: 60)
                     }
 
                     Toggle("Buscar en subdirectorios", isOn: $viewModel.recursive)
@@ -654,25 +691,25 @@ struct SidebarView: View {
                     .disabled(!viewModel.canReplace)
                 }
             }
-            .padding(22)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 16)
         }
     }
 
     private var brandHeader: some View {
         HStack(spacing: 14) {
-            AppGlyph(size: 70, cornerRadius: 17)
+            AppGlyph(size: 54, cornerRadius: 13)
                 .shadow(color: ReplacerTheme.teal.opacity(0.22), radius: 16, y: 8)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Replacer")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .font(.system(size: 26, weight: .heavy, design: .rounded))
                     .foregroundStyle(ReplacerTheme.ink)
                 Text("Encuentra. Revisa. Sustituye.")
                     .font(.callout.weight(.medium))
                     .foregroundStyle(ReplacerTheme.muted)
             }
         }
-        .padding(.bottom, 4)
     }
 }
 
@@ -729,7 +766,7 @@ struct NamePatternField: View {
                 .autocorrectionDisabled(true)
                 .font(.callout)
 
-            Text("Patrón glob sobre el nombre del archivo. Vacío = todos los archivos del alcance elegido.")
+            Text("Patrón glob sobre el nombre. Vacío = todos los archivos.")
                 .font(.caption2)
                 .foregroundStyle(ReplacerTheme.muted)
         }
