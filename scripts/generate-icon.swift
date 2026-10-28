@@ -1,9 +1,9 @@
 #!/usr/bin/env swift
 
-// Dibuja el icono de Replacer en código — el mismo glifo que `AppGlyph` en
-// ContentView.swift (degradado azul→verde azulado y el símbolo
-// `arrow.left.arrow.right` en blanco) — y lo exporta a:
-//   - Assets/AppIcon/Replacer-master.png (1024 px, referencia)
+// Genera todos los tamaños del icono de Replacer a partir de
+// Assets/AppIcon/Replacer-master.png (1024 px, icono de cuero ya ajustado a la
+// rejilla de macOS: placa de 824 px centrada y esquinas transparentes) y los
+// exporta a:
 //   - Assets/AppIcon/Replacer.iconset + Replacer.icns (build SwiftPM/DMG)
 //   - Replacer/Replacer/Assets.xcassets/AppIcon.appiconset (target de Xcode)
 //
@@ -20,10 +20,6 @@ let iconsetURL = assetsURL.appendingPathComponent("Replacer.iconset")
 let masterURL = assetsURL.appendingPathComponent("Replacer-master.png")
 let appIconSetURL = rootURL
     .appendingPathComponent("Replacer/Replacer/Assets.xcassets/AppIcon.appiconset")
-
-// Mismos colores que ReplacerTheme.blue / ReplacerTheme.teal en modo claro.
-let gradientStart = NSColor(calibratedRed: 0.13, green: 0.36, blue: 0.92, alpha: 1)
-let gradientEnd = NSColor(calibratedRed: 0.00, green: 0.66, blue: 0.58, alpha: 1)
 
 let iconsetFiles: [(String, Int)] = [
     ("icon_16x16.png", 16),
@@ -52,12 +48,18 @@ let appIconSetFiles: [(String, Int)] = [
     ("icon_1024x1024.png", 1024)
 ]
 
+guard let masterImage = NSImage(contentsOf: masterURL) else {
+    throw NSError(domain: "ReplacerIcon", code: 2, userInfo: [NSLocalizedDescriptionKey: "No se encontró el icono maestro en \(masterURL.path)"])
+}
+
+guard masterImage.size.width == masterImage.size.height else {
+    throw NSError(domain: "ReplacerIcon", code: 3, userInfo: [NSLocalizedDescriptionKey: "El icono maestro debe ser cuadrado (actual: \(masterImage.size))"])
+}
+
 // Dibuja directamente sobre un NSBitmapImageRep de tamaño en píxeles exacto.
 // `NSImage(size:) + lockFocus()` respeta el factor Retina de la pantalla que
 // ejecuta el script (normalmente 2x), duplicando el tamaño real de cada PNG
 // respecto al que indica su nombre de archivo — por eso no se usa aquí.
-// El fondo queda transparente fuera del rectángulo redondeado, como el resto
-// de iconos de macOS; la rejilla de Apple deja ~10 % de margen por lado.
 func renderIcon(pixels: Int) throws -> NSBitmapImageRep {
     guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil,
@@ -82,45 +84,12 @@ func renderIcon(pixels: Int) throws -> NSBitmapImageRep {
     context?.imageInterpolation = .high
 
     let side = CGFloat(pixels)
-    let inset = side * 100 / 1024
-    let tile = NSRect(x: inset, y: inset, width: side - 2 * inset, height: side - 2 * inset)
-    let radius = tile.width * 0.225
-    let path = NSBezierPath(roundedRect: tile, xRadius: radius, yRadius: radius)
-
-    // Sombra suave bajo la placa, como en los iconos del sistema.
-    if pixels >= 64 {
-        NSGraphicsContext.saveGraphicsState()
-        let shadow = NSShadow()
-        shadow.shadowColor = NSColor.black.withAlphaComponent(0.28)
-        shadow.shadowBlurRadius = side * 0.02
-        shadow.shadowOffset = NSSize(width: 0, height: -side * 0.01)
-        shadow.set()
-        gradientStart.setFill()
-        path.fill()
-        NSGraphicsContext.restoreGraphicsState()
-    }
-
-    // Degradado de arriba-izquierda a abajo-derecha (ángulo -45° en AppKit,
-    // cuyo eje Y crece hacia arriba).
-    NSGradient(starting: gradientStart, ending: gradientEnd)?.draw(in: path, angle: -45)
-
-    let symbolConfig = NSImage.SymbolConfiguration(pointSize: tile.width * 0.44, weight: .bold)
-        .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
-    guard
-        let symbol = NSImage(systemSymbolName: "arrow.left.arrow.right", accessibilityDescription: nil)?
-            .withSymbolConfiguration(symbolConfig)
-    else {
-        throw NSError(domain: "ReplacerIcon", code: 5, userInfo: [NSLocalizedDescriptionKey: "No se encontró el símbolo arrow.left.arrow.right"])
-    }
-
-    let symbolSize = symbol.size
-    let symbolRect = NSRect(
-        x: tile.midX - symbolSize.width / 2,
-        y: tile.midY - symbolSize.height / 2,
-        width: symbolSize.width,
-        height: symbolSize.height
+    masterImage.draw(
+        in: NSRect(x: 0, y: 0, width: side, height: side),
+        from: .zero,
+        operation: .copy,
+        fraction: 1.0
     )
-    symbol.draw(in: symbolRect, from: .zero, operation: .sourceOver, fraction: 1.0)
 
     return rep
 }
@@ -142,8 +111,6 @@ func icon(_ pixels: Int) throws -> NSBitmapImageRep {
     rendered[pixels] = rep
     return rep
 }
-
-try writePNG(icon(1024), to: masterURL)
 
 for (filename, pixels) in iconsetFiles {
     try writePNG(icon(pixels), to: iconsetURL.appendingPathComponent(filename))
@@ -171,4 +138,4 @@ if iconutil.terminationStatus != 0 {
     throw NSError(domain: "ReplacerIcon", code: Int(iconutil.terminationStatus), userInfo: [NSLocalizedDescriptionKey: "iconutil no pudo generar Replacer.icns"])
 }
 
-print("Icono generado en \(assetsURL.path) y \(appIconSetURL.path)")
+print("Icono generado a partir de \(masterURL.lastPathComponent) en \(assetsURL.path) y \(appIconSetURL.path)")

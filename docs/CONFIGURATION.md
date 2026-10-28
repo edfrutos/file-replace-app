@@ -31,8 +31,8 @@ La configuración principal está en `Package.swift`:
 - Icono generado: `Assets/AppIcon/Replacer.icns`
 - Bundle identifier: `local.replacer.app`
 - Fuente de versión: `Sources/FileReplaceCore/ReplacerBuildInfo.swift` (`ReplacerBuildInfo.version`)
-- Versión mostrada actualmente: `1.3.0`
-- Build del bundle: `4`
+- Versión mostrada actualmente: `1.3.1`
+- Build del bundle: `5`
 - macOS mínimo del bundle: `14.0`
 - Firma: ad-hoc local con `codesign --sign -`
 
@@ -46,8 +46,8 @@ La configuración principal está en `Package.swift`:
 
 - Scheme compartido: `Replacer App Store`
 - Bundle identifier: `com.edefrutos.Replacer`
-- Versión: `1.3.0` (`MARKETING_VERSION`, a mano igual que `ReplacerBuildInfo.version`)
-- Build: `3` (`CURRENT_PROJECT_VERSION`)
+- Versión: `1.3.1` (`MARKETING_VERSION`, a mano igual que `ReplacerBuildInfo.version`)
+- Build: `4` (`CURRENT_PROJECT_VERSION`; el `3` es el de 1.3.0, enviado a revisión)
 - macOS mínimo: `14.0`
 - Región de desarrollo: `es`
 

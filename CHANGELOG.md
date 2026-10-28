@@ -3,6 +3,24 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Este proyecto usa versionado semántico.
 
+## [1.3.1] - Sin publicar
+
+### Cambiado
+
+- Vuelve el icono de cuero, ya ajustado a la rejilla de macOS (margen, esquinas
+  transparentes y sombra). `scripts/generate-icon.swift` lo escala desde
+  `Assets/AppIcon/Replacer-master.png` en vez de dibujar el glifo azul.
+
+### Corregido
+
+- Ajustes: la etiqueta «Apariencia» se recortaba a su primera letra porque el
+  control segmentado ocupaba todo el ancho de la ventana.
+
+### Interno
+
+- Target de Xcode: versión `1.3.1`, build `4`.
+- `build-macos-app.sh`: `CFBundleVersion` pasa a `5`.
+
 ## [1.3.0] - 2026-09-06
 
 ### Añadido

@@ -176,30 +176,32 @@ Sigue en el target `Replacer`:
    de archivar) ▸ añade `APPSTORE_BUILD`.
 3. Pestaña **General** ▸ sección "Identity":
    - **Display Name**: `Replacer`
-   - **Version** (Marketing Version / `CFBundleShortVersionString`): `1.3.0`,
+   - **Version** (Marketing Version / `CFBundleShortVersionString`): `1.3.1` (la 1.3.0 se envió con el build 3),
      igual que `Sources/FileReplaceCore/ReplacerBuildInfo.swift`. No hay script
      compartido entre el build SwiftPM y este target de Xcode, así que toca
      mantenerlo sincronizado a mano en cada release.
    - **Build** (`CFBundleVersion`, `CURRENT_PROJECT_VERSION` en el proyecto): un
      entero, con numeración independiente del `BUNDLE_VERSION` del DMG. App Store
      Connect rechaza un build repetido, así que súbelo en cada envío. El último
-     subido es el `3`; el siguiente tiene que ser `4` o mayor. Si en
+     subido es el `3`; el proyecto ya está en `4` para el siguiente. Si en
      *Distribute App* dejas que Xcode gestione el número de build, lo sube él solo
      en el archive pero no en el repo: actualiza `project.pbxproj` después para
      que coincidan.
 
 ### 2.6 Icono
 
-El icono se dibuja en código: `scripts/generate-icon.swift` reproduce el
-glifo de la app (`AppGlyph` en `ContentView.swift`: degradado azul→verde
-azulado con `arrow.left.arrow.right` en blanco) y escribe a la vez
-`Assets/AppIcon/Replacer-master.png`, el `.iconset`/`.icns` del build DMG y
-los PNG de `Replacer/Replacer/Assets.xcassets/AppIcon.appiconset/`.
+La fuente del icono es `Assets/AppIcon/Replacer-master.png`: el icono de
+cuero a 1024 px, ya ajustado a la rejilla de macOS (placa de 824 px centrada,
+esquinas transparentes y sombra suave). `scripts/generate-icon.swift` lo
+escala a todos los tamaños y escribe a la vez el `.iconset`/`.icns` del build
+DMG y los PNG de `Replacer/Replacer/Assets.xcassets/AppIcon.appiconset/`.
 
-En tu Mac, desde la raíz del repo, ejecuta `swift scripts/generate-icon.swift`
-cada vez que cambie el diseño (necesita AppKit: no funciona en Linux). No
-hace falta arrastrar nada en Xcode: el asset catalog ya referencia esos
-archivos.
+Para cambiar el icono, sustituye el master por otro PNG cuadrado de 1024 px
+con el mismo margen y, en tu Mac, desde la raíz del repo, ejecuta
+`swift scripts/generate-icon.swift` (necesita AppKit: no funciona en Linux).
+No hace falta arrastrar nada en Xcode: el asset catalog ya referencia esos
+archivos. El icono azul dibujado en código (builds 2 y 3) está en el
+historial de git, commit `2cdbeb8`.
 
 ### 2.7 Compilar y probar
 

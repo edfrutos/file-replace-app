@@ -64,3 +64,6 @@ Icon?
 
 # Xcode per-user state (Replacer/Replacer.xcodeproj)
 xcuserdata/
+
+# Capturas sueltas (pegadas en Claude Code); las de la ficha van en AppleStore/
+Assets/capturas/*.png

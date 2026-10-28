@@ -108,8 +108,11 @@ struct PreferencesView: View {
                 }
             }
             .pickerStyle(.segmented)
+            // Sin esto el control segmentado ocupa todo el ancho y el Form
+            // recorta la etiqueta «Apariencia» a su primera letra.
+            .fixedSize()
         }
         .padding(24)
-        .frame(width: 340)
+        .frame(minWidth: 340)
     }
 }
