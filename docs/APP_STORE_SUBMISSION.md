@@ -240,7 +240,8 @@ apunta al target de la app.
 
 ## 4. Completar la ficha y enviar a revisión
 
-En App Store Connect, rellena con el build subido: descripción, palabras clave,
+En App Store Connect, rellena con el build subido: descripción, palabras clave
+(textos listos en [APP_STORE_LISTING.md](APP_STORE_LISTING.md)),
 capturas (paso 0.6), URL de soporte y privacidad (paso 0.4), Privacy Nutrition
 Label (paso 0.5), clasificación de edad, precio. Cuando esté todo, *Add for
 Review ▸ Submit*.
