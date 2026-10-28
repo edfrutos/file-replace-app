@@ -6,9 +6,9 @@ La app principal está escrita en SwiftUI y usa un módulo core testeable para l
 
 ## Versión publicada
 
-La versión estable actual es [Replacer 1.2.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.2.0), publicada como DMG para distribución limitada en equipos Apple silicon. El registro de cambios está en [CHANGELOG.md](CHANGELOG.md).
+La versión estable actual es [Replacer 1.3.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.3.0), publicada como DMG para distribución limitada en equipos Apple silicon. El registro de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
-Replacer 1.3.0 está en preparación para el Mac App Store (build 3 subido a App Store Connect). Se compila desde el target de Xcode en `Replacer/Replacer.xcodeproj`; ver [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md).
+La misma versión está en preparación para el Mac App Store (build 3 subido a App Store Connect). Se compila desde el target de Xcode en `Replacer/Replacer.xcodeproj`; ver [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md).
 
 El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es válido para pruebas y distribución local controlada, pero Gatekeeper lo rechaza en su validación automática al descargarlo en otros equipos. El destinatario debe verificar el origen y usar `Abrir` desde el menú contextual; macOS puede exigir además confirmar `Abrir igualmente` en Privacidad y seguridad. La distribución pública sin esas advertencias requiere una firma Developer ID y notarización.
 
