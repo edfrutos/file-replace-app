@@ -18,11 +18,36 @@ Este proyecto usa versionado semántico.
   muestra el error correspondiente en vez del contenido.
 - `FileReplaceService.readFullContent(at:maxBytes:)`: nuevo método público que expone
   la lectura de texto UTF-8 estricto ya usada internamente por `search`.
+- **Modo oscuro** y preferencia de **Apariencia** (`Replacer ▸ Ajustes…`: Claro,
+  Oscuro o Automático). Se aplica a toda la app, incluidos paneles, alertas y barra
+  de título (`NSApp.appearance`), y se guarda en `UserDefaults`
+  (`replacerAppearanceMode`).
+- Botón **Limpiar resultados** en la barra de resultados: vacía la lista, la
+  selección y el informe sin perder directorio ni textos.
+- **Target de Xcode para el Mac App Store** (`Replacer/Replacer.xcodeproj`, scheme
+  compartido `Replacer App Store`), con sandbox y compilado con `APPSTORE_BUILD`:
+  oculta el campo de ruta escrita a mano y el botón de actualizaciones.
+
+### Cambiado
+
+- Tras reemplazar, la lista de resultados se actualiza repitiendo la última búsqueda,
+  así que los archivos ya reemplazados desaparecen o muestran el conteo nuevo.
+- `Limpiar selección` pasa a llamarse `Deseleccionar todo`; `Seleccionar todo` y
+  `Deseleccionar todo` se desactivan cuando no tienen efecto.
+- Icono nuevo dibujado en código (`scripts/generate-icon.swift`) a partir del glifo
+  azul de la app; sustituye al icono anterior.
+- Barra lateral más compacta para que `Reemplazar seleccionados` quepa sin scroll en
+  una ventana de 900 pt de alto.
+- Se desactivan las pestañas de ventana de macOS (la app usa una sola ventana).
 
 ### Interno
 
 - Tests de `FileReplaceCore`: 14 (2 de `AppVersion`, 12 de `FileReplaceService`).
 - `build-macos-app.sh`: `CFBundleVersion` pasa a `4`.
+- Target de Xcode: build (`CURRENT_PROJECT_VERSION`) `3`, el subido a App Store
+  Connect. Numeración independiente de la del DMG.
+- `scripts/captura-appstore.sh` y capturas de 2880×1800 en
+  `Assets/capturas/AppleStore/`.
 
 ## [1.2.0] - 2026-08-28
 

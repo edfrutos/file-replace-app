@@ -8,6 +8,8 @@ La app principal está escrita en SwiftUI y usa un módulo core testeable para l
 
 La versión estable actual es [Replacer 1.2.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.2.0), publicada como DMG para distribución limitada en equipos Apple silicon. El registro de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
+Replacer 1.3.0 está en preparación para el Mac App Store (build 3 subido a App Store Connect). Se compila desde el target de Xcode en `Replacer/Replacer.xcodeproj`; ver [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md).
+
 El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es válido para pruebas y distribución local controlada, pero Gatekeeper lo rechaza en su validación automática al descargarlo en otros equipos. El destinatario debe verificar el origen y usar `Abrir` desde el menú contextual; macOS puede exigir además confirmar `Abrir igualmente` en Privacidad y seguridad. La distribución pública sin esas advertencias requiere una firma Developer ID y notarización.
 
 ## Estructura
@@ -22,7 +24,13 @@ Tests/
 scripts/
   build-macos-app.sh    # Genera dist/Replacer.app
   build-dmg.sh          # Genera dist/Replacer-<versión>.dmg
-  generate-icon.swift   # Genera el .icns de distribución
+  generate-icon.swift   # Genera el icono (.icns del DMG y asset catalog de Xcode)
+  captura-appstore.sh   # Capturas 2880×1800 para el Mac App Store
+Replacer/
+  Replacer.xcodeproj/   # Target de Xcode del Mac App Store (scheme «Replacer App Store»)
+  Replacer/             # Entitlements, assets e Info; ContentView y FileReplaceApp son enlaces a Sources/
+Assets/
+  capturas/AppleStore/  # Capturas de la ficha del Mac App Store
 docs/
   native-macos.md       # Guía funcional de la app nativa
   ARCHITECTURE.md       # Diseño técnico y flujo de datos

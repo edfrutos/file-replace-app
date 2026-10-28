@@ -32,8 +32,9 @@ graph TD
 7. Sobre cada resultado, el usuario puede revelarlo en Finder o abrir una vista de solo lectura con su contenido íntegro y las coincidencias resaltadas; ninguna de las dos acciones modifica el filesystem ni afecta a la selección de reemplazo.
 8. Al reemplazar, el core comprueba que el archivo sea escribible; si es de solo lectura devuelve `notWritable` sin crear backup ni tocar el archivo.
 9. Si el archivo es escribible, el core crea primero una copia `.replacer-backup` junto al original y después escribe el nuevo contenido en UTF-8.
+10. Terminado el reemplazo, la UI repite la última búsqueda (`lastQuery`) para que la lista refleje el estado real de los archivos.
 
-En distribución limitada no se incorporan tokens ni se consulta automáticamente la API privada de GitHub. `UpdateCenter` abre bajo petición la página de releases en el navegador, donde GitHub aplica la sesión y los permisos del destinatario. La acción está disponible en la cabecera y en el menú de la aplicación.
+En distribución limitada no se incorporan tokens ni se consulta automáticamente la API privada de GitHub. `UpdateCenter` abre bajo petición la página de releases en el navegador, donde GitHub aplica la sesión y los permisos del destinatario. La acción está disponible en la cabecera y en el menú de la aplicación, solo en el build SwiftPM/DMG: el target del Mac App Store se compila con `APPSTORE_BUILD`, que la oculta junto con el campo de ruta escrita a mano.
 
 La versión Flask sigue un flujo equivalente para `/api/search` y `/api/replace`, con autorización de reemplazo basada en los resultados encontrados en la sesión del proceso.
 
@@ -64,7 +65,9 @@ Tests/
   FileReplaceCoreTests/ # Tests de comportamiento del core con fixtures temporales
 scripts/
   build-macos-app.sh    # Empaquetado manual de dist/Replacer.app
-  generate-icon.swift   # Generación de iconos .png/.icns
+  generate-icon.swift   # Generación de iconos .png/.icns y del asset catalog de Xcode
+  captura-appstore.sh   # Capturas para el Mac App Store
+Replacer/               # Proyecto Xcode del Mac App Store (sandbox, APPSTORE_BUILD)
 docs/                   # Documentación técnica y funcional
 app.py                  # Servidor Flask heredado
 static/index.html       # UI web heredada

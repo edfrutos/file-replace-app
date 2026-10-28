@@ -33,7 +33,7 @@ Tests/
 swift run Replacer
 ```
 
-También puedes abrir la carpeta del proyecto en Xcode y ejecutar el esquema `Replacer`.
+También puedes abrir la carpeta del proyecto en Xcode y ejecutar el esquema `Replacer`: es el binario SwiftPM/DMG. Para la versión del Mac App Store abre `Replacer/Replacer.xcodeproj` y usa el scheme `Replacer App Store` (ver [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md)).
 
 Nota: al ejecutar con `swift run` (binario sin bundle), el panel nativo de selección de carpetas puede no aparecer, porque macOS lo sirve desde un proceso aparte que necesita un `Info.plist`. En ese caso, usa el campo de texto de la sección **Ubicación** para escribir o pegar la ruta del directorio, o ejecuta la app empaquetada (`scripts/build-macos-app.sh` y abre `dist/Replacer.app`).
 
@@ -62,11 +62,18 @@ Los tests crean archivos temporales y no modifican el contenido real del reposit
 3. Introduce el texto a buscar y el texto de reemplazo.
 4. Activa la búsqueda recursiva y ajusta la profundidad si necesitas revisar subdirectorios.
 5. Ejecuta la búsqueda. Replacer lee cada archivo como UTF-8, omite binarios, archivos no UTF-8 y archivos mayores de 5 MB, e informa de cuántos ha omitido.
-6. Ningún resultado viene marcado: revisa las previsualizaciones y marca los archivos que quieras modificar (o usa `Seleccionar todo`).
+6. Ningún resultado viene marcado: revisa las previsualizaciones y marca los archivos que quieras modificar (o usa `Seleccionar todo` / `Deseleccionar todo`). `Limpiar resultados` vacía la lista sin perder directorio ni textos.
 7. Sobre cada resultado, el icono de carpeta lo revela en Finder ya seleccionado, y el icono de lupa sobre documento abre una hoja de solo lectura con el contenido íntegro del archivo y todas las coincidencias resaltadas (no solo la primera). Ninguna de las dos acciones modifica archivos ni cambia la selección de reemplazo; si el archivo cambió o se borró desde la búsqueda, se informa del error.
 8. Pulsa `Reemplazar seleccionados` y confirma la operación. Replacer creará una copia `.replacer-backup` junto a cada archivo antes de escribir. Los archivos de solo lectura se informan como error y no se tocan.
+9. Al terminar, Replacer repite la última búsqueda para que la lista refleje el estado actual de los archivos.
+
+## Apariencia
+
+`Replacer ▸ Ajustes…` permite elegir Claro, Oscuro o Automático (sigue al sistema). La elección se aplica a toda la app, incluidos paneles y alertas, y se recuerda entre sesiones. No afecta a otras apps: la ventana de Finder que abre «Mostrar en Finder» sigue la apariencia del sistema.
 
 ## Actualizaciones
+
+Solo en el build SwiftPM/DMG; la versión del Mac App Store no incluye este botón.
 
 El botón `Actualizaciones` y la acción `Replacer > Buscar actualizaciones…` muestran primero un diálogo con la versión instalada y explican que el acceso es privado. Tras confirmarlo, Replacer abre la página de releases en el navegador.
 

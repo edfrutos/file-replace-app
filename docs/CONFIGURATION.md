@@ -40,6 +40,23 @@ La configuración principal está en `Package.swift`:
 
 `scripts/build-dmg.sh` crea `dist/Replacer-<versión>.dmg`. El script reconstruye primero `dist/Replacer.app`, prepara una carpeta temporal con `Replacer.app` y un enlace a `/Applications`, genera el DMG comprimido con `hdiutil` y lo verifica.
 
+## Target De Xcode (Mac App Store)
+
+`Replacer/Replacer.xcodeproj` compila el mismo código con `APPSTORE_BUILD` y sandbox:
+
+- Scheme compartido: `Replacer App Store`
+- Bundle identifier: `com.edefrutos.Replacer`
+- Versión: `1.3.0` (`MARKETING_VERSION`, a mano igual que `ReplacerBuildInfo.version`)
+- Build: `3` (`CURRENT_PROJECT_VERSION`)
+- macOS mínimo: `14.0`
+- Región de desarrollo: `es`
+
+## Preferencias De Usuario
+
+| Clave `UserDefaults` | Valores | Uso |
+|---|---|---|
+| `replacerAppearanceMode` | `light`, `dark`, `system` (por defecto) | Apariencia elegida en `Ajustes…` |
+
 ## Comprobación De Actualizaciones
 
 La distribución es privada y la API anónima de GitHub devuelve `404`. Por seguridad, la app no incorpora tokens ni credenciales y no realiza comprobaciones automáticas.

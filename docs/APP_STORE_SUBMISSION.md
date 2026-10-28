@@ -180,8 +180,13 @@ Sigue en el target `Replacer`:
      igual que `Sources/FileReplaceCore/ReplacerBuildInfo.swift`. No hay script
      compartido entre el build SwiftPM y este target de Xcode, así que toca
      mantenerlo sincronizado a mano en cada release.
-   - **Build** (`CFBundleVersion`): un entero, por ejemplo `1` para esta primera
-     subida (numeración independiente del `BUNDLE_VERSION` del DMG).
+   - **Build** (`CFBundleVersion`, `CURRENT_PROJECT_VERSION` en el proyecto): un
+     entero, con numeración independiente del `BUNDLE_VERSION` del DMG. App Store
+     Connect rechaza un build repetido, así que súbelo en cada envío. El último
+     subido es el `3`; el siguiente tiene que ser `4` o mayor. Si en
+     *Distribute App* dejas que Xcode gestione el número de build, lo sube él solo
+     en el archive pero no en el repo: actualiza `project.pbxproj` después para
+     que coincidan.
 
 ### 2.6 Icono
 
