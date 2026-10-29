@@ -115,6 +115,7 @@ Los tests usan archivos temporales y no modifican contenido real del repositorio
 - [Publicar una release](docs/RELEASING.md)
 - [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md)
 - [Ficha del Mac App Store](docs/APP_STORE_LISTING.md)
+- [Notas para App Review](docs/APP_REVIEW_NOTES.md)
 - [Política de privacidad](PRIVACY.md)
 - [Cambios](CHANGELOG.md)
 - [API heredada Flask](docs/API.md)

@@ -244,6 +244,7 @@ apunta al target de la app.
 
 En App Store Connect, rellena con el build subido: descripción, palabras clave
 (textos listos en [APP_STORE_LISTING.md](APP_STORE_LISTING.md)),
+notas para el revisor ([APP_REVIEW_NOTES.md](APP_REVIEW_NOTES.md)),
 capturas (paso 0.6), URL de soporte y privacidad (paso 0.4), Privacy Nutrition
 Label (paso 0.5), clasificación de edad, precio. Cuando esté todo, *Add for
 Review ▸ Submit*.
