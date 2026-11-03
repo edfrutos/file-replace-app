@@ -6,19 +6,82 @@ import Darwin
 import Glibc
 #endif
 
+/// Un par «buscar → reemplazar». Una búsqueda puede llevar varios y todos se
+/// aplican en una sola pasada sobre el contenido original del archivo.
+public struct ReplacementRule: Equatable, Hashable, Codable, Sendable {
+    public var find: String
+    public var replace: String
+
+    public init(find: String, replace: String) {
+        self.find = find
+        self.replace = replace
+    }
+}
+
+/// Una aparición concreta de una regla dentro de un archivo. Los desplazamientos
+/// están en unidades UTF-16 (los de `NSString`), sobre el contenido leído al
+/// buscar; `SearchHit.contentDigest` permite comprobar que no ha cambiado.
+public struct MatchOccurrence: Identifiable, Equatable, Sendable {
+    /// Posición de la aparición dentro del archivo (0, 1, 2…), estable mientras
+    /// el contenido no cambie.
+    public let id: Int
+    public let ruleIndex: Int
+    public let utf16Offset: Int
+    public let utf16Length: Int
+    /// Línea (desde 1) donde empieza la aparición.
+    public let line: Int
+    /// Texto de la línea antes y después de la aparición, recortado y sin saltos.
+    public let prefix: String
+    public let matchedText: String
+    public let suffix: String
+
+    public init(
+        id: Int,
+        ruleIndex: Int,
+        utf16Offset: Int,
+        utf16Length: Int,
+        line: Int,
+        prefix: String,
+        matchedText: String,
+        suffix: String
+    ) {
+        self.id = id
+        self.ruleIndex = ruleIndex
+        self.utf16Offset = utf16Offset
+        self.utf16Length = utf16Length
+        self.line = line
+        self.prefix = prefix
+        self.matchedText = matchedText
+        self.suffix = suffix
+    }
+}
+
 public struct SearchHit: Identifiable, Equatable, Sendable {
     public let id: String
     public let fileURL: URL
     public let relativePath: String
     public let count: Int
     public let preview: String
+    /// Apariciones de las reglas de la búsqueda, en orden de posición y sin solaparse.
+    public let occurrences: [MatchOccurrence]
+    /// Huella del contenido leído al buscar, para detectar cambios antes de escribir.
+    public let contentDigest: String
 
-    public init(fileURL: URL, relativePath: String, count: Int, preview: String) {
+    public init(
+        fileURL: URL,
+        relativePath: String,
+        count: Int,
+        preview: String,
+        occurrences: [MatchOccurrence] = [],
+        contentDigest: String = ""
+    ) {
         self.id = fileURL.path
         self.fileURL = fileURL
         self.relativePath = relativePath
         self.count = count
         self.preview = preview
+        self.occurrences = occurrences
+        self.contentDigest = contentDigest
     }
 }
 
@@ -47,10 +110,16 @@ public struct SearchReport: Equatable, Sendable {
 public struct ReplacementResult: Equatable, Sendable {
     public let replacements: Int
     public let backupURL: URL
+    public let fileURL: URL?
+    /// Huella del contenido escrito; el historial la usa para comprobar, antes de
+    /// restaurar, que nadie ha tocado el archivo después del reemplazo.
+    public let writtenDigest: String
 
-    public init(replacements: Int, backupURL: URL) {
+    public init(replacements: Int, backupURL: URL, fileURL: URL? = nil, writtenDigest: String = "") {
         self.replacements = replacements
         self.backupURL = backupURL
+        self.fileURL = fileURL
+        self.writtenDigest = writtenDigest
     }
 }
 
@@ -66,6 +135,8 @@ public enum FileReplaceError: LocalizedError, Equatable {
     case backupFailed(String)
     case notWritable(String)
     case writeFailed(String)
+    case fileChangedSinceSearch(String)
+    case nothingSelected(String)
 
     public var errorDescription: String? {
         switch self {
@@ -91,6 +162,10 @@ public enum FileReplaceError: LocalizedError, Equatable {
             return "El archivo es de solo lectura y no se puede modificar: \(path)"
         case .writeFailed(let path):
             return "No se pudo escribir en el archivo: \(path)"
+        case .fileChangedSinceSearch(let path):
+            return "El archivo cambió después de la búsqueda; vuelve a buscar antes de reemplazar: \(path)"
+        case .nothingSelected(let path):
+            return "No hay ninguna coincidencia marcada en el archivo: \(path)"
         }
     }
 }
@@ -132,10 +207,33 @@ public final class FileReplaceService: @unchecked Sendable {
         maxResults: Int = FileReplaceService.defaultMaxResults,
         maxFileSizeBytes: Int = FileReplaceService.defaultMaxFileSizeBytes
     ) throws -> SearchReport {
+        try search(
+            directoryURL: directoryURL,
+            namePattern: namePattern,
+            rules: [ReplacementRule(find: searchText, replace: "")],
+            recursive: recursive,
+            maxDepth: maxDepth,
+            maxResults: maxResults,
+            maxFileSizeBytes: maxFileSizeBytes
+        )
+    }
+
+    /// Busca a la vez todas las `rules` en los archivos de `directoryURL`. Las
+    /// reglas con el texto de búsqueda vacío se ignoran. Cada `SearchHit` lleva
+    /// sus apariciones (`occurrences`) para revisarlas y reemplazarlas una a una.
+    public func search(
+        directoryURL: URL?,
+        namePattern: String = "",
+        rules: [ReplacementRule],
+        recursive: Bool,
+        maxDepth: Int,
+        maxResults: Int = FileReplaceService.defaultMaxResults,
+        maxFileSizeBytes: Int = FileReplaceService.defaultMaxFileSizeBytes
+    ) throws -> SearchReport {
         guard let directoryURL else { throw FileReplaceError.missingDirectory }
 
         let cleanPattern = namePattern.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !searchText.isEmpty else { throw FileReplaceError.emptySearch }
+        guard rules.contains(where: { !$0.find.isEmpty }) else { throw FileReplaceError.emptySearch }
 
         var isDirectory: ObjCBool = false
         let directoryPath = directoryURL.path
@@ -162,15 +260,17 @@ public final class FileReplaceService: @unchecked Sendable {
         for fileURL in found.urls {
             do {
                 let content = try readTextFile(fileURL, maxBytes: maxFileSizeBytes)
-                let count = content.nonOverlappingCount(of: searchText)
+                let occurrences = Self.occurrences(of: rules, in: content)
 
-                if count > 0 {
+                if let first = occurrences.first {
                     hits.append(
                         SearchHit(
                             fileURL: fileURL,
                             relativePath: relativePath(for: fileURL, from: directoryURL),
-                            count: count,
-                            preview: content.preview(around: searchText, context: 90)
+                            count: occurrences.count,
+                            preview: "\(first.prefix)>>>>\(first.matchedText)<<<<\(first.suffix)",
+                            occurrences: occurrences,
+                            contentDigest: Self.digest(of: content)
                         )
                     )
                 } else {
@@ -224,6 +324,123 @@ public final class FileReplaceService: @unchecked Sendable {
         }
 
         return ReplacementResult(replacements: count, backupURL: backupURL)
+    }
+
+    /// Aplica `rules` solo en las apariciones de `hit` que no estén en
+    /// `excludedOccurrenceIDs`, en una sola pasada sobre el contenido original:
+    /// el texto ya reemplazado no vuelve a buscarse, así que «A→B» y «B→C» no se
+    /// encadenan. Falla con `.fileChangedSinceSearch` si el archivo cambió desde
+    /// la búsqueda, para no escribir en posiciones que ya no corresponden.
+    public func replace(
+        in hit: SearchHit,
+        rules: [ReplacementRule],
+        excludingOccurrences excludedOccurrenceIDs: Set<Int> = []
+    ) throws -> ReplacementResult {
+        let content = try readTextFile(hit.fileURL, maxBytes: Self.defaultMaxFileSizeBytes)
+        guard Self.digest(of: content) == hit.contentDigest else {
+            throw FileReplaceError.fileChangedSinceSearch(hit.fileURL.path)
+        }
+
+        let selected = hit.occurrences.filter { !excludedOccurrenceIDs.contains($0.id) }
+        guard !selected.isEmpty else { throw FileReplaceError.nothingSelected(hit.fileURL.path) }
+
+        guard fileManager.isWritableFile(atPath: hit.fileURL.path) else {
+            throw FileReplaceError.notWritable(hit.fileURL.path)
+        }
+
+        let utf16 = content.utf16
+        var newContent = ""
+        var cursor = utf16.startIndex
+        for occurrence in selected.sorted(by: { $0.utf16Offset < $1.utf16Offset }) {
+            guard rules.indices.contains(occurrence.ruleIndex) else {
+                throw FileReplaceError.fileChangedSinceSearch(hit.fileURL.path)
+            }
+            let start = utf16.index(utf16.startIndex, offsetBy: occurrence.utf16Offset)
+            let end = utf16.index(start, offsetBy: occurrence.utf16Length)
+            newContent += String(content[cursor..<start])
+            newContent += rules[occurrence.ruleIndex].replace
+            cursor = end
+        }
+        newContent += String(content[cursor...])
+
+        let backupURL = try createBackup(for: hit.fileURL)
+
+        do {
+            try newContent.write(to: hit.fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            throw FileReplaceError.writeFailed(hit.fileURL.path)
+        }
+
+        return ReplacementResult(
+            replacements: selected.count,
+            backupURL: backupURL,
+            fileURL: hit.fileURL,
+            writtenDigest: Self.digest(of: newContent)
+        )
+    }
+
+    /// Localiza todas las apariciones de `rules` en `content`. Cada regla se
+    /// busca sin solapes consigo misma; entre reglas, gana la aparición que
+    /// empieza antes y, a igual posición, la regla que va primero en la lista.
+    static func occurrences(of rules: [ReplacementRule], in content: String) -> [MatchOccurrence] {
+        var candidates: [(range: Range<String.Index>, ruleIndex: Int)] = []
+        for (ruleIndex, rule) in rules.enumerated() where !rule.find.isEmpty {
+            var searchStart = content.startIndex
+            while let range = content.range(of: rule.find, range: searchStart..<content.endIndex) {
+                candidates.append((range, ruleIndex))
+                searchStart = range.upperBound
+            }
+        }
+
+        candidates.sort {
+            $0.range.lowerBound != $1.range.lowerBound
+                ? $0.range.lowerBound < $1.range.lowerBound
+                : $0.ruleIndex < $1.ruleIndex
+        }
+
+        var result: [MatchOccurrence] = []
+        var lastEnd = content.startIndex
+        var line = 1
+        var lineCountedUpTo = content.startIndex
+
+        for candidate in candidates where candidate.range.lowerBound >= lastEnd {
+            let range = candidate.range
+            line += content[lineCountedUpTo..<range.lowerBound].reduce(0) { $1 == "\n" ? $0 + 1 : $0 }
+            lineCountedUpTo = range.lowerBound
+
+            let lineStart = content[..<range.lowerBound].lastIndex(of: "\n").map { content.index(after: $0) } ?? content.startIndex
+            let lineEnd = content[range.upperBound...].firstIndex(of: "\n") ?? content.endIndex
+
+            result.append(
+                MatchOccurrence(
+                    id: result.count,
+                    ruleIndex: candidate.ruleIndex,
+                    utf16Offset: content.utf16.distance(from: content.utf16.startIndex, to: range.lowerBound),
+                    utf16Length: content.utf16.distance(from: range.lowerBound, to: range.upperBound),
+                    line: line,
+                    prefix: String(content[lineStart..<range.lowerBound].suffix(Self.occurrenceContext)),
+                    matchedText: String(content[range]).replacingOccurrences(of: "\n", with: "⏎"),
+                    suffix: String(content[range.upperBound..<lineEnd].prefix(Self.occurrenceContext))
+                )
+            )
+            lastEnd = range.upperBound
+        }
+
+        return result
+    }
+
+    /// Caracteres de contexto que se guardan a cada lado de una aparición.
+    static let occurrenceContext = 60
+
+    /// Huella FNV-1a de 64 bits del contenido en UTF-8. Estable entre ejecuciones
+    /// (a diferencia de `hashValue`), así que también sirve para el historial.
+    public static func digest(of content: String) -> String {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in content.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return String(hash, radix: 16)
     }
 
     private func findFiles(
@@ -391,15 +608,5 @@ private extension String {
         }
 
         return count
-    }
-
-    func preview(around needle: String, context: Int) -> String {
-        guard let range = range(of: needle) else { return "" }
-
-        let lower = index(range.lowerBound, offsetBy: -context, limitedBy: startIndex) ?? startIndex
-        let upper = index(range.upperBound, offsetBy: context, limitedBy: endIndex) ?? endIndex
-        let snippet = String(self[lower..<upper]).replacingOccurrences(of: "\n", with: " ")
-
-        return snippet.replacingOccurrences(of: needle, with: ">>>>\(needle)<<<<")
     }
 }

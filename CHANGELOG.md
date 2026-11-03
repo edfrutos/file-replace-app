@@ -3,6 +3,34 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Este proyecto usa versionado semántico.
 
+## [1.4.0] - Sin publicar
+
+### Añadido
+
+- **Varios pares «buscar → reemplazar»** aplicados en una sola pasada, sin
+  encadenarse. Si dos coincidencias se solapan, gana la que empieza antes y, en la
+  misma posición, el par de más arriba.
+- **Recetas**: guardar los pares actuales con un nombre, cargarlas y eliminarlas
+  (`UserDefaults`, clave `replacerRecipes`), e **importar pares desde CSV/TSV**
+  (coma, punto y coma o tabulador; comillas; cabecera opcional).
+- **Revisión por coincidencia**: cada resultado muestra sus apariciones con línea y
+  el cambio antes → después; se pueden excluir una a una.
+- Aviso cuando se edita el texto a buscar tras la búsqueda: hay que volver a buscar
+  para poder reemplazar.
+
+### Cambiado
+
+- Antes de escribir se comprueba que el archivo no haya cambiado desde la búsqueda
+  (huella FNV-1a del contenido); si cambió, se informa y no se toca.
+
+### Interno
+
+- `FileReplaceService`: `ReplacementRule`, `MatchOccurrence`,
+  `search(…rules:…)` y `replace(in:rules:excludingOccurrences:)`; nuevos errores
+  `fileChangedSinceSearch` y `nothingSelected`. `RuleList.swift` con
+  `ReplacementRecipe` y `RuleListParser`.
+- Tests de `FileReplaceCore`: 25.
+
 ## [1.3.1] - Sin publicar
 
 ### Cambiado

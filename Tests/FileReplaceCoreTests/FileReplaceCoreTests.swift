@@ -241,6 +241,124 @@ struct FileReplaceServiceTests {
             }
         }
     }
+
+    @Test("search with several rules reports every occurrence with line and context")
+    func searchWithSeveralRules() throws {
+        let fixture = try TemporaryFixture()
+        try fixture.write("site.html", contents: "<a href=\"http://old.com\">Old Co</a>\nVisit Old Co at http://old.com/about\n")
+
+        let rules = [
+            ReplacementRule(find: "http://old.com", replace: "https://new.com"),
+            ReplacementRule(find: "Old Co", replace: "New Co")
+        ]
+        let report = try FileReplaceService().search(
+            directoryURL: fixture.url,
+            rules: rules,
+            recursive: false,
+            maxDepth: 1
+        )
+
+        let hit = try #require(report.hits.first)
+        #expect(hit.count == 4)
+        #expect(hit.occurrences.map(\.ruleIndex) == [0, 1, 1, 0])
+        #expect(hit.occurrences.map(\.line) == [1, 1, 2, 2])
+        #expect(hit.occurrences.map(\.id) == [0, 1, 2, 3])
+        #expect(hit.occurrences[2].prefix == "Visit ")
+        #expect(hit.occurrences[2].suffix == " at http://old.com/about")
+        #expect(!hit.contentDigest.isEmpty)
+    }
+
+    @Test("overlapping rules: the earliest match wins, then the first rule")
+    func overlappingRulesResolveDeterministically() throws {
+        let occurrences = FileReplaceService.occurrences(
+            of: [
+                ReplacementRule(find: "abc", replace: "1"),
+                ReplacementRule(find: "ab", replace: "2"),
+                ReplacementRule(find: "bcd", replace: "3")
+            ],
+            in: "abcd ab bcd"
+        )
+
+        #expect(occurrences.map(\.ruleIndex) == [0, 1, 2])
+        #expect(occurrences.map(\.utf16Offset) == [0, 5, 8])
+    }
+
+    @Test("rules are applied in one pass and do not chain")
+    func rulesDoNotChain() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("a.txt", contents: "A B A")
+        let rules = [
+            ReplacementRule(find: "A", replace: "B"),
+            ReplacementRule(find: "B", replace: "C")
+        ]
+        let service = FileReplaceService()
+        let hit = try #require(try service.search(directoryURL: fixture.url, rules: rules, recursive: false, maxDepth: 1).hits.first)
+
+        let result = try service.replace(in: hit, rules: rules)
+
+        #expect(result.replacements == 3)
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "B C B")
+        #expect(try String(contentsOf: result.backupURL, encoding: .utf8) == "A B A")
+        #expect(result.writtenDigest == FileReplaceService.digest(of: "B C B"))
+    }
+
+    @Test("excluded occurrences are left untouched")
+    func excludedOccurrencesAreKept() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("a.txt", contents: "café, café y café")
+        let rules = [ReplacementRule(find: "café", replace: "té")]
+        let service = FileReplaceService()
+        let hit = try #require(try service.search(directoryURL: fixture.url, rules: rules, recursive: false, maxDepth: 1).hits.first)
+
+        let result = try service.replace(in: hit, rules: rules, excludingOccurrences: [1])
+
+        #expect(result.replacements == 2)
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "té, café y té")
+    }
+
+    @Test("excluding every occurrence writes nothing")
+    func excludingEverythingThrows() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("a.txt", contents: "alpha alpha")
+        let rules = [ReplacementRule(find: "alpha", replace: "omega")]
+        let service = FileReplaceService()
+        let hit = try #require(try service.search(directoryURL: fixture.url, rules: rules, recursive: false, maxDepth: 1).hits.first)
+
+        #expect(throws: FileReplaceError.nothingSelected(fileURL.path)) {
+            _ = try service.replace(in: hit, rules: rules, excludingOccurrences: [0, 1])
+        }
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "alpha alpha")
+        #expect(!FileManager.default.fileExists(atPath: fileURL.path + ".replacer-backup"))
+    }
+
+    @Test("replace refuses a file that changed after the search")
+    func replaceRefusesChangedFile() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("a.txt", contents: "alpha")
+        let rules = [ReplacementRule(find: "alpha", replace: "omega")]
+        let service = FileReplaceService()
+        let hit = try #require(try service.search(directoryURL: fixture.url, rules: rules, recursive: false, maxDepth: 1).hits.first)
+
+        try "xx alpha".write(to: fileURL, atomically: true, encoding: .utf8)
+
+        #expect(throws: FileReplaceError.fileChangedSinceSearch(fileURL.path)) {
+            _ = try service.replace(in: hit, rules: rules)
+        }
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "xx alpha")
+    }
+
+    @Test("offsets are UTF-16 so emoji and accents before a match do not shift it")
+    func offsetsHandleNonASCII() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("a.txt", contents: "👋🏽 ñandú: foo\nfoo")
+        let rules = [ReplacementRule(find: "foo", replace: "bar")]
+        let service = FileReplaceService()
+        let hit = try #require(try service.search(directoryURL: fixture.url, rules: rules, recursive: false, maxDepth: 1).hits.first)
+
+        #expect(hit.occurrences.first?.utf16Offset == ("👋🏽 ñandú: " as NSString).length)
+        _ = try service.replace(in: hit, rules: rules, excludingOccurrences: [1])
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "👋🏽 ñandú: bar\nfoo")
+    }
 }
 
 private struct TemporaryFixture {
@@ -269,5 +387,51 @@ private struct TemporaryFixture {
         try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
         try data.write(to: fileURL, options: .atomic)
         return fileURL
+    }
+}
+
+@Suite("RuleListParser")
+struct RuleListParserTests {
+    @Test("parses comma-separated pairs and skips a header")
+    func parsesCommaSeparated() {
+        let rules = RuleListParser.parse("find,replace\nhttp://old.com,https://new.com\nOld Co,New Co\n")
+        #expect(rules == [
+            ReplacementRule(find: "http://old.com", replace: "https://new.com"),
+            ReplacementRule(find: "Old Co", replace: "New Co")
+        ])
+    }
+
+    @Test("detects semicolons, as Excel exports in Spanish, and CRLF line endings")
+    func parsesSemicolonSeparated() {
+        let rules = RuleListParser.parse("\u{FEFF}buscar;reemplazar\r\nhola, mundo;adiós\r\nsolo;\r\n")
+        #expect(rules == [
+            ReplacementRule(find: "hola, mundo", replace: "adiós"),
+            ReplacementRule(find: "solo", replace: "")
+        ])
+    }
+
+    @Test("handles quoted fields with separators, escaped quotes and line breaks")
+    func parsesQuotedFields() {
+        let rules = RuleListParser.parse("\"a,b\",\"say \"\"hi\"\"\"\n\"line1\nline2\",x\n")
+        #expect(rules == [
+            ReplacementRule(find: "a,b", replace: "say \"hi\""),
+            ReplacementRule(find: "line1\nline2", replace: "x")
+        ])
+    }
+
+    @Test("reads tab-separated text and ignores blank rows and empty finds")
+    func parsesTabSeparated() {
+        let rules = RuleListParser.parse("uno\tone\n\n\tnada\ndos\ttwo")
+        #expect(rules == [
+            ReplacementRule(find: "uno", replace: "one"),
+            ReplacementRule(find: "dos", replace: "two")
+        ])
+    }
+
+    @Test("a recipe round-trips through JSON")
+    func recipeRoundTrips() throws {
+        let recipe = ReplacementRecipe(name: "Dominio", rules: [ReplacementRule(find: "a", replace: "b")])
+        let decoded = try JSONDecoder().decode(ReplacementRecipe.self, from: JSONEncoder().encode(recipe))
+        #expect(decoded == recipe)
     }
 }

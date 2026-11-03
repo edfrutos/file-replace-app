@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import FileReplaceCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Color que cambia según el modo de apariencia activo (claro u oscuro), sin
 /// depender de colores con nombre en un asset catalog — necesario porque este
@@ -16,7 +17,7 @@ private extension Color {
     }
 }
 
-private enum ReplacerTheme {
+enum ReplacerTheme {
     static let ink = Color(
         light: NSColor(calibratedRed: 0.12, green: 0.15, blue: 0.20, alpha: 1),
         dark: NSColor(calibratedRed: 0.93, green: 0.94, blue: 0.97, alpha: 1)
@@ -96,12 +97,30 @@ struct AppGlyph: View {
     }
 }
 
+/// Par «buscar → reemplazar» tal como se edita en la barra lateral. El `id`
+/// estable evita que SwiftUI recree los editores al añadir o quitar pares.
+struct EditableRule: Identifiable, Equatable {
+    let id: UUID
+    var find: String
+    var replace: String
+
+    init(id: UUID = UUID(), find: String = "", replace: String = "") {
+        self.id = id
+        self.find = find
+        self.replace = replace
+    }
+
+    var rule: ReplacementRule {
+        ReplacementRule(find: find, replace: replace)
+    }
+}
+
 /// Parámetros de una búsqueda, guardados para poder repetirla tal cual tras
 /// un reemplazo aunque el usuario haya editado los campos entretanto.
 private struct SearchQuery {
     var directoryURL: URL?
     var namePattern: String
-    var searchText: String
+    var rules: [ReplacementRule]
     var recursive: Bool
     var maxDepth: Int
 }
@@ -111,42 +130,210 @@ private struct SearchOutcome: Sendable {
     var errorMessage: String?
 }
 
+private let recipesDefaultsKey = "replacerRecipes"
+
 @MainActor
 final class FileReplaceViewModel: ObservableObject {
     @Published var directoryURL: URL?
     @Published var directoryPathInput = ""
     @Published var namePattern = ""
-    @Published var searchText = ""
-    @Published var replacementText = ""
+    @Published var rules: [EditableRule] = [EditableRule()]
     @Published var recursive = false
     @Published var maxDepth = 5.0
     @Published var hits: [SearchHit] = []
     @Published var selectedHitIDs = Set<SearchHit.ID>()
+    /// Apariciones que el usuario ha desmarcado, por archivo. Lo que no está
+    /// aquí se reemplaza.
+    @Published var excludedOccurrences: [SearchHit.ID: Set<Int>] = [:]
+    @Published var expandedHitIDs = Set<SearchHit.ID>()
     @Published var statusMessage = "Selecciona un directorio y define la búsqueda."
     @Published var isWorking = false
     @Published var lastReport: SearchReport?
     @Published var replacementLog: [String] = []
+    @Published private(set) var recipes: [ReplacementRecipe] = []
     private var lastQuery: SearchQuery?
 
     @Published var previewHit: SearchHit?
     @Published var previewContent: String?
     @Published var previewError: String?
     @Published var isLoadingPreview = false
-    private(set) var previewHighlightText = ""
+    private(set) var previewHighlightTexts: [String] = []
 
     private let service = FileReplaceService()
 
+    init() {
+        loadRecipes()
+    }
+
+    /// Reglas con texto de búsqueda, en el orden de la barra lateral.
+    var activeRules: [ReplacementRule] {
+        rules.map(\.rule).filter { !$0.find.isEmpty }
+    }
+
+    /// `true` si, tras buscar, el usuario ha cambiado algún texto a buscar: los
+    /// resultados ya no corresponden y hay que volver a buscar antes de
+    /// reemplazar. Cambiar solo los textos de reemplazo no invalida nada.
+    var criteriaChanged: Bool {
+        guard let lastQuery else { return false }
+        return lastQuery.rules.map(\.find) != activeRules.map(\.find)
+    }
+
+    /// Reglas con las que se reemplazará: las buscadas, con el texto de
+    /// reemplazo que haya ahora en la barra lateral.
+    private var replaceRules: [ReplacementRule]? {
+        guard lastQuery != nil, !criteriaChanged else { return nil }
+        return activeRules
+    }
+
     var selectedHits: [SearchHit] {
-        hits.filter { selectedHitIDs.contains($0.id) }
+        hits.filter { selectedHitIDs.contains($0.id) && includedCount(for: $0) > 0 }
     }
 
     var canSearch: Bool {
-        directoryURL != nil && !searchText.isEmpty
+        directoryURL != nil && !activeRules.isEmpty
     }
 
     var canReplace: Bool {
-        !selectedHitIDs.isEmpty && !searchText.isEmpty && !isWorking
+        !selectedHits.isEmpty && replaceRules != nil && !isWorking
     }
+
+    func includedCount(for hit: SearchHit) -> Int {
+        hit.count - (excludedOccurrences[hit.id]?.count ?? 0)
+    }
+
+    func excludedIDs(for hit: SearchHit) -> Set<Int> {
+        excludedOccurrences[hit.id] ?? []
+    }
+
+    /// Texto que sustituirá a `occurrence` si se reemplaza ahora.
+    func replacement(for occurrence: MatchOccurrence) -> String {
+        let source = replaceRules ?? lastQuery?.rules ?? []
+        return source.indices.contains(occurrence.ruleIndex) ? source[occurrence.ruleIndex].replace : ""
+    }
+
+    // MARK: - Pares buscar → reemplazar
+
+    func addRule() {
+        rules.append(EditableRule())
+    }
+
+    func removeRule(_ id: EditableRule.ID) {
+        if rules.count > 1 {
+            rules.removeAll { $0.id == id }
+        } else {
+            rules = [EditableRule()]
+        }
+    }
+
+    /// Bindings por `id` en lugar de por índice: al quitar un par mientras su
+    /// editor tiene el foco, un binding por índice apuntaría fuera del array.
+    func findBinding(for id: EditableRule.ID) -> Binding<String> {
+        Binding(
+            get: { [weak self] in self?.rules.first { $0.id == id }?.find ?? "" },
+            set: { [weak self] value in
+                guard let self, let index = self.rules.firstIndex(where: { $0.id == id }) else { return }
+                self.rules[index].find = value
+            }
+        )
+    }
+
+    func replaceBinding(for id: EditableRule.ID) -> Binding<String> {
+        Binding(
+            get: { [weak self] in self?.rules.first { $0.id == id }?.replace ?? "" },
+            set: { [weak self] value in
+                guard let self, let index = self.rules.firstIndex(where: { $0.id == id }) else { return }
+                self.rules[index].replace = value
+            }
+        )
+    }
+
+    // MARK: - Recetas
+
+    func applyRecipe(_ recipe: ReplacementRecipe) {
+        rules = recipe.rules.isEmpty ? [EditableRule()] : recipe.rules.map { EditableRule(find: $0.find, replace: $0.replace) }
+        statusMessage = "Receta «\(recipe.name)» cargada: \(recipe.rules.count) par(es). Pulsa «Buscar coincidencias»."
+    }
+
+    func saveCurrentRulesAsRecipe() {
+        let current = activeRules
+        guard !current.isEmpty else { return }
+
+        let alert = NSAlert()
+        alert.messageText = "Guardar receta"
+        alert.informativeText = "Guarda estos \(current.count) par(es) para reutilizarlos más adelante."
+        alert.addButton(withTitle: "Guardar")
+        alert.addButton(withTitle: "Cancelar")
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+        field.placeholderString = "Nombre de la receta"
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let name = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else {
+            statusMessage = "La receta necesita un nombre."
+            return
+        }
+
+        if let index = recipes.firstIndex(where: { $0.name == name }) {
+            recipes[index].rules = current
+        } else {
+            recipes.append(ReplacementRecipe(name: name, rules: current))
+            recipes.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        }
+        storeRecipes()
+        statusMessage = "Receta «\(name)» guardada."
+    }
+
+    func deleteRecipe(_ recipe: ReplacementRecipe) {
+        recipes.removeAll { $0.id == recipe.id }
+        storeRecipes()
+        statusMessage = "Receta «\(recipe.name)» eliminada."
+    }
+
+    /// Carga pares desde un CSV/TSV (primera columna buscar, segunda reemplazar)
+    /// y sustituye los de la barra lateral.
+    func importRulesFromCSV() {
+        NSApp.activate()
+
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.commaSeparatedText, .tabSeparatedText, .plainText]
+        panel.prompt = "Importar"
+        panel.message = "Elige un CSV con dos columnas: texto a buscar y texto de reemplazo"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        guard let data = try? Data(contentsOf: url),
+              let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
+            statusMessage = "No se pudo leer \(url.lastPathComponent)."
+            return
+        }
+
+        let imported = RuleListParser.parse(text)
+        guard !imported.isEmpty else {
+            statusMessage = "\(url.lastPathComponent) no contiene pares válidos (columna 1: buscar, columna 2: reemplazar)."
+            return
+        }
+
+        rules = imported.map { EditableRule(find: $0.find, replace: $0.replace) }
+        statusMessage = "Importados \(imported.count) par(es) desde \(url.lastPathComponent). Pulsa «Buscar coincidencias»."
+    }
+
+    private func loadRecipes() {
+        guard let data = UserDefaults.standard.data(forKey: recipesDefaultsKey),
+              let stored = try? JSONDecoder().decode([ReplacementRecipe].self, from: data) else { return }
+        recipes = stored
+    }
+
+    private func storeRecipes() {
+        guard let data = try? JSONEncoder().encode(recipes) else { return }
+        UserDefaults.standard.set(data, forKey: recipesDefaultsKey)
+    }
+
+    // MARK: - Directorio
 
     func chooseDirectory() {
         // Al ejecutar como binario de SwiftPM (`swift run`) la app puede no estar
@@ -202,17 +389,21 @@ final class FileReplaceViewModel: ObservableObject {
         directoryPathInput = url.path
         hits = []
         selectedHitIDs = []
+        excludedOccurrences = [:]
+        expandedHitIDs = []
         lastReport = nil
         lastQuery = nil
         replacementLog = []
         statusMessage = "Directorio: \(url.path). Escribe el texto a buscar y pulsa «Buscar coincidencias»."
     }
 
+    // MARK: - Búsqueda y reemplazo
+
     func search() {
         let query = SearchQuery(
             directoryURL: directoryURL,
             namePattern: namePattern,
-            searchText: searchText,
+            rules: activeRules,
             recursive: recursive,
             maxDepth: Int(maxDepth)
         )
@@ -227,7 +418,7 @@ final class FileReplaceViewModel: ObservableObject {
     private func runSearch(_ query: SearchQuery, statusPrefix: String?) {
         let dir = query.directoryURL
         let pattern = query.namePattern
-        let text = query.searchText
+        let searchRules = query.rules
         let rec = query.recursive
         let depth = query.maxDepth
         let service = self.service
@@ -235,6 +426,8 @@ final class FileReplaceViewModel: ObservableObject {
         isWorking = true
         hits = []
         selectedHitIDs = []
+        excludedOccurrences = [:]
+        expandedHitIDs = []
         statusMessage = statusPrefix.map { "\($0) Actualizando resultados…" } ?? "Buscando…"
 
         Task {
@@ -243,7 +436,7 @@ final class FileReplaceViewModel: ObservableObject {
                     let report = try service.search(
                         directoryURL: dir,
                         namePattern: pattern,
-                        searchText: text,
+                        rules: searchRules,
                         recursive: rec,
                         maxDepth: depth
                     )
@@ -258,9 +451,10 @@ final class FileReplaceViewModel: ObservableObject {
                 hits = report.hits
                 selectedHitIDs = []
 
+                let occurrences = report.hits.reduce(0) { $0 + $1.count }
                 var message = report.hits.isEmpty
                     ? "Ninguna coincidencia en \(report.filesScanned) archivo(s) revisado(s)."
-                    : "\(report.hits.count) archivo(s) con coincidencias sobre \(report.filesScanned) revisado(s). Revisa y marca los archivos que quieras reemplazar."
+                    : "\(occurrences) coincidencia(s) en \(report.hits.count) archivo(s) sobre \(report.filesScanned) revisado(s). Revisa y marca lo que quieras reemplazar."
                 if !report.skippedFiles.isEmpty {
                     message += " \(report.skippedFiles.count) omitido(s) (binario, no UTF-8 o demasiado grande)."
                 }
@@ -281,20 +475,21 @@ final class FileReplaceViewModel: ObservableObject {
     }
 
     func replaceSelected() {
-        guard !selectedHits.isEmpty else { return }
+        guard let replaceRules = self.replaceRules else { return }
+        let targets = selectedHits
+        guard !targets.isEmpty else { return }
 
+        let total = targets.reduce(0) { $0 + includedCount(for: $1) }
         let alert = NSAlert()
         alert.messageText = "Confirmar reemplazo"
-        alert.informativeText = "Se modificarán \(selectedHits.count) archivo(s). Antes de escribir, Replacer creará una copia .replacer-backup junto a cada archivo."
+        alert.informativeText = "Se reemplazarán \(total) coincidencia(s) en \(targets.count) archivo(s). Antes de escribir, Replacer creará una copia .replacer-backup junto a cada archivo."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Reemplazar")
         alert.addButton(withTitle: "Cancelar")
 
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
-        let targets = selectedHits
-        let needle = searchText
-        let replacement = replacementText
+        let exclusions = excludedOccurrences
         let service = self.service
 
         isWorking = true
@@ -306,7 +501,11 @@ final class FileReplaceViewModel: ObservableObject {
                 var out: [String] = []
                 for hit in targets {
                     do {
-                        let result = try service.replace(in: hit, searchText: needle, replacementText: replacement)
+                        let result = try service.replace(
+                            in: hit,
+                            rules: replaceRules,
+                            excludingOccurrences: exclusions[hit.id] ?? []
+                        )
                         out.append("\(hit.relativePath): \(result.replacements) reemplazo(s). Backup: \(result.backupURL.lastPathComponent)")
                     } catch {
                         out.append("\(hit.relativePath): \(error.localizedDescription)")
@@ -317,16 +516,20 @@ final class FileReplaceViewModel: ObservableObject {
 
             replacementLog = lines
             let summary = "Reemplazo finalizado en \(targets.count) archivo(s)."
-            // Repite la última búsqueda para que la lista refleje el contenido
-            // ya modificado en lugar de los fragmentos anteriores al reemplazo.
-            if let lastQuery {
-                runSearch(lastQuery, statusPrefix: summary)
+            // Repite la búsqueda —con los textos de reemplazo usados— para que
+            // la lista refleje el contenido ya modificado.
+            if var query = lastQuery {
+                query.rules = replaceRules
+                lastQuery = query
+                runSearch(query, statusPrefix: summary)
             } else {
                 statusMessage = summary
                 isWorking = false
             }
         }
     }
+
+    // MARK: - Selección
 
     func toggleSelection(for hit: SearchHit) {
         if selectedHitIDs.contains(hit.id) {
@@ -344,13 +547,45 @@ final class FileReplaceViewModel: ObservableObject {
         selectedHitIDs = []
     }
 
+    func toggleExpanded(_ hit: SearchHit) {
+        if expandedHitIDs.contains(hit.id) {
+            expandedHitIDs.remove(hit.id)
+        } else {
+            expandedHitIDs.insert(hit.id)
+        }
+    }
+
+    /// Marca o desmarca una aparición. Marcar una aparición de un archivo no
+    /// seleccionado lo selecciona, para que el cambio tenga efecto.
+    func toggleOccurrence(_ occurrenceID: Int, in hit: SearchHit) {
+        var excluded = excludedOccurrences[hit.id] ?? []
+        if excluded.contains(occurrenceID) {
+            excluded.remove(occurrenceID)
+            selectedHitIDs.insert(hit.id)
+        } else {
+            excluded.insert(occurrenceID)
+        }
+        excludedOccurrences[hit.id] = excluded.isEmpty ? nil : excluded
+    }
+
+    func includeAllOccurrences(in hit: SearchHit) {
+        excludedOccurrences[hit.id] = nil
+        selectedHitIDs.insert(hit.id)
+    }
+
+    func excludeAllOccurrences(in hit: SearchHit) {
+        excludedOccurrences[hit.id] = Set(hit.occurrences.map(\.id))
+    }
+
     /// Descarta los resultados de la búsqueda en curso y vuelve al estado
-    /// vacío, conservando el directorio y los textos de búsqueda/reemplazo
-    /// para poder relanzarla.
+    /// vacío, conservando el directorio y los pares buscar → reemplazar para
+    /// poder relanzarla.
     func clearResults() {
         closePreview()
         hits = []
         selectedHitIDs = []
+        excludedOccurrences = [:]
+        expandedHitIDs = []
         lastReport = nil
         lastQuery = nil
         replacementLog = []
@@ -373,13 +608,12 @@ final class FileReplaceViewModel: ObservableObject {
     }
 
     /// Abre la hoja de previsualización y carga el contenido completo del archivo
-    /// fuera del hilo principal. El texto a resaltar se congela al abrir la hoja,
-    /// aunque el usuario siga editando el campo de búsqueda mientras está abierta.
+    /// fuera del hilo principal. Los textos a resaltar son los de la búsqueda.
     func openPreview(for hit: SearchHit) {
         previewHit = hit
         previewContent = nil
         previewError = nil
-        previewHighlightText = searchText
+        previewHighlightTexts = lastQuery?.rules.map(\.find) ?? []
         isLoadingPreview = true
 
         let fileURL = hit.fileURL
@@ -402,7 +636,7 @@ final class FileReplaceViewModel: ObservableObject {
         previewHit = nil
         previewContent = nil
         previewError = nil
-        previewHighlightText = ""
+        previewHighlightTexts = []
     }
 }
 
@@ -428,7 +662,7 @@ struct ContentView: View {
                 content: viewModel.previewContent,
                 errorMessage: viewModel.previewError,
                 isLoading: viewModel.isLoadingPreview,
-                highlightText: viewModel.previewHighlightText,
+                highlightTexts: viewModel.previewHighlightTexts,
                 onRevealInFinder: { viewModel.revealInFinder(hit) },
                 onClose: { viewModel.closePreview() }
             )
@@ -451,10 +685,22 @@ struct ContentView: View {
                                 HitRow(
                                     hit: hit,
                                     isSelected: viewModel.selectedHitIDs.contains(hit.id),
+                                    includedCount: viewModel.includedCount(for: hit),
+                                    isExpanded: viewModel.expandedHitIDs.contains(hit.id),
                                     onToggle: { viewModel.toggleSelection(for: hit) },
+                                    onToggleExpanded: { viewModel.toggleExpanded(hit) },
                                     onRevealInFinder: { viewModel.revealInFinder(hit) },
                                     onViewContent: { viewModel.openPreview(for: hit) }
-                                )
+                                ) {
+                                    OccurrenceList(
+                                        hit: hit,
+                                        excluded: viewModel.excludedIDs(for: hit),
+                                        replacement: { viewModel.replacement(for: $0) },
+                                        onToggle: { viewModel.toggleOccurrence($0, in: hit) },
+                                        onIncludeAll: { viewModel.includeAllOccurrences(in: hit) },
+                                        onExcludeAll: { viewModel.excludeAllOccurrences(in: hit) }
+                                    )
+                                }
                             }
                         }
                         .padding(22)
@@ -539,9 +785,15 @@ struct ContentView: View {
 
     private var resultsToolbar: some View {
         HStack {
-            Label("\(viewModel.selectedHitIDs.count) de \(viewModel.hits.count) seleccionados", systemImage: "checklist")
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(ReplacerTheme.ink)
+            if viewModel.criteriaChanged {
+                Label("Has cambiado el texto a buscar: vuelve a buscar para poder reemplazar", systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(ReplacerTheme.amber)
+            } else {
+                Label("\(viewModel.selectedHitIDs.count) de \(viewModel.hits.count) seleccionados", systemImage: "checklist")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(ReplacerTheme.ink)
+            }
 
             Spacer()
 
@@ -642,21 +894,7 @@ struct SidebarView: View {
                         NamePatternField(text: $viewModel.namePattern)
                     }
 
-                    LabeledInput(title: "Texto a buscar") {
-                        PromptTextEditor(
-                            text: $viewModel.searchText,
-                            prompt: "Cadena exacta que quieres localizar"
-                        )
-                        .frame(minHeight: 60)
-                    }
-
-                    LabeledInput(title: "Texto de reemplazo") {
-                        PromptTextEditor(
-                            text: $viewModel.replacementText,
-                            prompt: "Nuevo texto que se escribirá"
-                        )
-                        .frame(minHeight: 60)
-                    }
+                    RulesEditor(viewModel: viewModel)
 
                     Toggle("Buscar en subdirectorios", isOn: $viewModel.recursive)
                         .toggleStyle(.switch)
@@ -895,14 +1133,55 @@ struct SoftButtonStyle: ButtonStyle {
     }
 }
 
-struct HitRow: View {
+struct HitRow<Occurrences: View>: View {
     let hit: SearchHit
     let isSelected: Bool
+    let includedCount: Int
+    let isExpanded: Bool
     let onToggle: () -> Void
+    let onToggleExpanded: () -> Void
     let onRevealInFinder: () -> Void
     let onViewContent: () -> Void
+    @ViewBuilder let occurrences: () -> Occurrences
+
+    private var countLabel: String {
+        includedCount == hit.count
+            ? "\(hit.count) coincidencia(s)"
+            : "\(includedCount) de \(hit.count) coincidencia(s)"
+    }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            summary
+
+            Button(action: onToggleExpanded) {
+                Label(
+                    isExpanded ? "Ocultar coincidencias" : "Revisar coincidencias una a una",
+                    systemImage: isExpanded ? "chevron.down" : "chevron.right"
+                )
+                .font(.caption.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(ReplacerTheme.blue)
+
+            if isExpanded {
+                occurrences()
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(ReplacerTheme.surface.opacity(isSelected ? 0.96 : 0.78))
+                .shadow(color: Color.black.opacity(isSelected ? 0.10 : 0.05), radius: 16, y: 8)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(isSelected ? ReplacerTheme.teal.opacity(0.55) : ReplacerTheme.border, lineWidth: isSelected ? 1.5 : 1)
+        )
+    }
+
+    private var summary: some View {
         HStack(alignment: .top, spacing: 14) {
             Button(action: onToggle) {
                 HStack(alignment: .top, spacing: 14) {
@@ -936,9 +1215,9 @@ struct HitRow: View {
             .buttonStyle(.plain)
 
             VStack(alignment: .trailing, spacing: 10) {
-                Text("\(hit.count) coincidencia(s)")
+                Text(countLabel)
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(ReplacerTheme.blue)
+                    .foregroundStyle(includedCount == hit.count ? ReplacerTheme.blue : ReplacerTheme.amber)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
                     .background(ReplacerTheme.blue.opacity(0.10))
@@ -959,17 +1238,6 @@ struct HitRow: View {
                 .foregroundStyle(ReplacerTheme.muted)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(ReplacerTheme.surface.opacity(isSelected ? 0.96 : 0.78))
-                .shadow(color: Color.black.opacity(isSelected ? 0.10 : 0.05), radius: 16, y: 8)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(isSelected ? ReplacerTheme.teal.opacity(0.55) : ReplacerTheme.border, lineWidth: isSelected ? 1.5 : 1)
-        )
     }
 }
 
@@ -995,14 +1263,14 @@ struct ReplacementLogView: View {
 }
 
 /// Hoja de solo lectura que muestra el contenido íntegro de un `SearchHit` con las
-/// coincidencias de `highlightText` resaltadas. No permite editar ni escribir el archivo:
+/// coincidencias de `highlightTexts` resaltadas. No permite editar ni escribir el archivo:
 /// cualquier cambio real pasa siempre por el flujo de reemplazo con confirmación y backup.
 struct FileContentPreviewView: View {
     let hit: SearchHit
     let content: String?
     let errorMessage: String?
     let isLoading: Bool
-    let highlightText: String
+    let highlightTexts: [String]
     let onRevealInFinder: () -> Void
     let onClose: () -> Void
 
@@ -1064,7 +1332,7 @@ struct FileContentPreviewView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(24)
             } else if let content {
-                ReadOnlyHighlightedTextView(content: content, highlightText: highlightText)
+                ReadOnlyHighlightedTextView(content: content, highlightTexts: highlightTexts)
             } else {
                 Color.clear
             }
@@ -1086,12 +1354,12 @@ struct FileContentPreviewView: View {
     }
 }
 
-/// `NSTextView` de solo lectura que resalta cada aparición de `highlightText` en `content`.
+/// `NSTextView` de solo lectura que resalta cada aparición de `highlightTexts` en `content`.
 /// Limita el resaltado a las primeras `maxHighlights` coincidencias para no penalizar
 /// el render en archivos con miles de apariciones.
 struct ReadOnlyHighlightedTextView: NSViewRepresentable {
     let content: String
-    let highlightText: String
+    let highlightTexts: [String]
     let maxHighlights = 500
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -1116,7 +1384,7 @@ struct ReadOnlyHighlightedTextView: NSViewRepresentable {
     }
 
     private func apply(to textView: NSTextView) {
-        // `content`/`highlightText` no cambian durante la vida de esta vista; evita recalcular
+        // `content`/`highlightTexts` no cambian durante la vida de esta vista; evita recalcular
         // el resaltado (y perder la posición de scroll o la selección) en cada redibujado de SwiftUI.
         guard textView.string != content else { return }
 
@@ -1128,10 +1396,11 @@ struct ReadOnlyHighlightedTextView: NSViewRepresentable {
             ]
         )
 
-        if !highlightText.isEmpty {
-            let nsContent = content as NSString
+        let nsContent = content as NSString
+        var highlighted = 0
+
+        for highlightText in highlightTexts where !highlightText.isEmpty {
             var searchRange = NSRange(location: 0, length: nsContent.length)
-            var highlighted = 0
 
             while highlighted < maxHighlights {
                 let found = nsContent.range(of: highlightText, options: [], range: searchRange)
