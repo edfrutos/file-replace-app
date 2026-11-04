@@ -389,6 +389,29 @@ final class FileReplaceViewModel: ObservableObject {
         applyDirectory(url)
     }
 
+    /// Carpeta soltada en la ventana o abierta desde Finder. Un archivo suelto no
+    /// sirve: con sandbox el permiso llega solo para lo que se suelta, no para la
+    /// carpeta que lo contiene.
+    func openFolder(_ url: URL) {
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey])
+        guard values?.isDirectory == true else {
+            statusMessage = "«\(url.lastPathComponent)» no es una carpeta. Arrastra la carpeta en la que quieres buscar."
+            return
+        }
+        // Una app o un documento de Pages son carpetas para el sistema, pero
+        // Finder los muestra como archivos.
+        guard values?.isPackage != true else {
+            statusMessage = "«\(url.lastPathComponent)» es un paquete (como una app o un documento de Pages), no una carpeta. Arrastra la carpeta en la que quieres buscar."
+            return
+        }
+        guard !isWorking else {
+            statusMessage = "Espera a que termine la operación en curso antes de cambiar de carpeta."
+            return
+        }
+        closePreview()
+        applyDirectory(url)
+    }
+
     private func applyDirectory(_ url: URL) {
         directoryURL = url
         directoryPathInput = url.path
@@ -664,6 +687,8 @@ final class FileReplaceViewModel: ObservableObject {
 
 struct ContentView: View {
     @StateObject private var viewModel = FileReplaceViewModel()
+    @ObservedObject private var folderRequests = FolderOpenRequests.shared
+    @State private var isDropTargeted = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -692,6 +717,44 @@ struct ContentView: View {
         .sheet(isPresented: $viewModel.isShowingHistory) {
             ReplacementHistoryView(viewModel: viewModel)
         }
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            guard let provider = providers.first else { return false }
+            let model = viewModel
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                guard let url else { return }
+                Task { @MainActor in
+                    model.openFolder(url)
+                }
+            }
+            return true
+        }
+        .overlay {
+            if isDropTargeted {
+                dropOverlay
+            }
+        }
+        .onChange(of: folderRequests.pendingURL, initial: true) {
+            guard let url = folderRequests.pendingURL else { return }
+            folderRequests.pendingURL = nil
+            viewModel.openFolder(url)
+        }
+    }
+
+    private var dropOverlay: some View {
+        ZStack {
+            ReplacerTheme.blue.opacity(0.08)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(ReplacerTheme.blue, style: StrokeStyle(lineWidth: 3, dash: [10, 7]))
+                .padding(12)
+            Label("Suelta la carpeta para buscar en ella", systemImage: "folder.badge.plus")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(ReplacerTheme.blue)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 14)
+                .background(ReplacerTheme.surface)
+                .clipShape(Capsule())
+        }
+        .allowsHitTesting(false)
     }
 
     private var detailPane: some View {
@@ -805,7 +868,7 @@ struct ContentView: View {
                 Text("Listo para encontrar cambios")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundStyle(ReplacerTheme.ink)
-                Text("Elige un directorio, ajusta el filtro de nombre opcional y revisa cada coincidencia antes de reemplazar.")
+                Text("Elige un directorio —o arrástralo a esta ventana—, ajusta el filtro de nombre opcional y revisa cada coincidencia antes de reemplazar.")
                     .font(.title3)
                     .foregroundStyle(ReplacerTheme.muted)
                     .multilineTextAlignment(.center)

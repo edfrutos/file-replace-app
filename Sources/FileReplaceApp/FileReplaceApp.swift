@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// Al ejecutar como binario de SwiftPM (`swift run`) la app arranca sin bundle.
@@ -14,12 +15,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        NSApp.servicesProvider = self
         NSApp.activate()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
     }
+
+    /// Carpeta abierta desde Finder («Abrir con») o soltada en el icono del Dock.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard let url = urls.first else { return }
+        FolderOpenRequests.shared.pendingURL = url
+        NSApp.activate()
+    }
+
+    /// Servicio «Buscar y reemplazar con Replacer» (clic derecho en una carpeta
+    /// en Finder ▸ Servicios / Acciones rápidas). Finder no ofrece «Abrir con»
+    /// para carpetas; el nombre del mensaje está en `NSServices` del Info.plist.
+    @objc func openFolderService(
+        _ pasteboard: NSPasteboard,
+        userData: String?,
+        error: AutoreleasingUnsafeMutablePointer<NSString?>
+    ) {
+        let urls = pasteboard.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL]
+        guard let url = urls?.first else {
+            error.pointee = "Replacer no recibió ninguna carpeta." as NSString
+            return
+        }
+        FolderOpenRequests.shared.pendingURL = url
+        NSApp.activate()
+    }
+}
+
+/// Buzón entre el delegado de la app y la ventana: si la carpeta llega al
+/// arrancar, antes de que exista la ventana, espera aquí hasta que la recoja.
+@MainActor
+final class FolderOpenRequests: ObservableObject {
+    static let shared = FolderOpenRequests()
+
+    @Published var pendingURL: URL?
 }
 
 /// Preferencia de apariencia persistida en `UserDefaults` bajo la misma clave

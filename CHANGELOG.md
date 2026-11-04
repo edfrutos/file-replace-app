@@ -22,6 +22,13 @@ Este proyecto usa versionado semántico.
   suelto desde su `.replacer-backup`, solo si el archivo no se ha modificado después
   del reemplazo. Se guarda en `Application Support/Replacer/history.json` con un
   marcador de seguridad de la carpeta para restaurar tras reiniciar la app.
+- **Arrastrar una carpeta** a la ventana para elegirla como directorio de búsqueda.
+  Los archivos sueltos y los paquetes (apps, documentos de Pages) se rechazan con
+  un aviso.
+- **Integración con Finder**: servicio «Buscar y reemplazar con Replacer» (clic
+  derecho en una carpeta ▸ Servicios) y carpetas soltadas en el icono del Dock,
+  también con la app cerrada. Replacer se declara para carpetas con rango
+  `Alternate`, así que no pasa a ser la app por defecto.
 
 ### Cambiado
 
@@ -39,6 +46,9 @@ Este proyecto usa versionado semántico.
   `fileChangedSinceReplacement`.
 - Entitlement `com.apple.security.files.bookmarks.app-scope`; el target de Xcode
   usa ya `Sources/FileReplaceApp/Replacer.entitlements` (`CODE_SIGN_ENTITLEMENTS`).
+- `Replacer/Replacer-Info.plist` (`INFOPLIST_FILE`) con `CFBundleDocumentTypes`
+  y `NSServices`; Xcode lo fusiona con el Info.plist generado.
+  `build-macos-app.sh` añade las mismas claves al DMG.
 - Tests de `FileReplaceCore`: 30.
 
 ## [1.3.1] - Sin publicar
