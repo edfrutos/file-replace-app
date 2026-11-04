@@ -137,6 +137,8 @@ public enum FileReplaceError: LocalizedError, Equatable {
     case writeFailed(String)
     case fileChangedSinceSearch(String)
     case nothingSelected(String)
+    case backupMissing(String)
+    case fileChangedSinceReplacement(String)
 
     public var errorDescription: String? {
         switch self {
@@ -166,6 +168,10 @@ public enum FileReplaceError: LocalizedError, Equatable {
             return "El archivo cambió después de la búsqueda; vuelve a buscar antes de reemplazar: \(path)"
         case .nothingSelected(let path):
             return "No hay ninguna coincidencia marcada en el archivo: \(path)"
+        case .backupMissing(let path):
+            return "La copia de seguridad ya no existe; no se puede restaurar: \(path)"
+        case .fileChangedSinceReplacement(let path):
+            return "El archivo se ha modificado después del reemplazo; restaurarlo perdería esos cambios: \(path)"
         }
     }
 }
@@ -377,6 +383,41 @@ public final class FileReplaceService: @unchecked Sendable {
             fileURL: hit.fileURL,
             writtenDigest: Self.digest(of: newContent)
         )
+    }
+
+    /// Devuelve un archivo a su copia de seguridad, solo si sigue exactamente
+    /// como lo dejó Replacer: si alguien lo editó después, restaurar borraría ese
+    /// trabajo y se informa con `.fileChangedSinceReplacement`. La copia de
+    /// seguridad se conserva.
+    public func restore(_ entry: ReplacementBatch.Entry) throws {
+        let fileURL = entry.fileURL
+        let backupURL = entry.backupURL
+
+        guard fileManager.isRegularFile(backupURL) else {
+            throw FileReplaceError.backupMissing(backupURL.path)
+        }
+
+        let current = try readTextFile(fileURL, maxBytes: Self.defaultMaxFileSizeBytes)
+        guard Self.digest(of: current) == entry.writtenDigest else {
+            throw FileReplaceError.fileChangedSinceReplacement(fileURL.path)
+        }
+
+        guard fileManager.isWritableFile(atPath: fileURL.path) else {
+            throw FileReplaceError.notWritable(fileURL.path)
+        }
+
+        let original: Data
+        do {
+            original = try Data(contentsOf: backupURL)
+        } catch {
+            throw FileReplaceError.readFailed(backupURL.path)
+        }
+
+        do {
+            try original.write(to: fileURL, options: .atomic)
+        } catch {
+            throw FileReplaceError.writeFailed(fileURL.path)
+        }
     }
 
     /// Localiza todas las apariciones de `rules` en `content`. Cada regla se

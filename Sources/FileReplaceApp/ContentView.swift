@@ -151,6 +151,9 @@ final class FileReplaceViewModel: ObservableObject {
     @Published var lastReport: SearchReport?
     @Published var replacementLog: [String] = []
     @Published private(set) var recipes: [ReplacementRecipe] = []
+    /// Reemplazos ya hechos, el más reciente primero (ver `ReplacementHistoryView.swift`).
+    @Published var history: [ReplacementBatch] = []
+    @Published var isShowingHistory = false
     private var lastQuery: SearchQuery?
 
     @Published var previewHit: SearchHit?
@@ -159,10 +162,12 @@ final class FileReplaceViewModel: ObservableObject {
     @Published var isLoadingPreview = false
     private(set) var previewHighlightTexts: [String] = []
 
-    private let service = FileReplaceService()
+    let service = FileReplaceService()
+    let historyStore = ReplacementHistoryStore(fileURL: FileReplaceViewModel.historyFileURL)
 
     init() {
         loadRecipes()
+        history = historyStore.load()
     }
 
     /// Reglas con texto de búsqueda, en el orden de la barra lateral.
@@ -415,6 +420,16 @@ final class FileReplaceViewModel: ObservableObject {
     /// Ejecuta `query` y sustituye la lista de resultados. `statusPrefix` se
     /// antepone al resumen (lo usa el refresco tras un reemplazo para no perder
     /// el mensaje de «Reemplazo finalizado…»).
+    /// Repite la última búsqueda, si la hay, para que la lista refleje cambios
+    /// hechos en los archivos (por ejemplo, tras restaurar desde el historial).
+    func refreshResults(statusPrefix: String) {
+        if let lastQuery {
+            runSearch(lastQuery, statusPrefix: statusPrefix)
+        } else {
+            statusMessage = statusPrefix
+        }
+    }
+
     private func runSearch(_ query: SearchQuery, statusPrefix: String?) {
         let dir = query.directoryURL
         let pattern = query.namePattern
@@ -497,8 +512,9 @@ final class FileReplaceViewModel: ObservableObject {
         statusMessage = "Reemplazando en \(targets.count) archivo(s)…"
 
         Task {
-            let lines: [String] = await Task.detached(priority: .userInitiated) {
+            let (lines, entries): ([String], [ReplacementBatch.Entry]) = await Task.detached(priority: .userInitiated) {
                 var out: [String] = []
+                var entries: [ReplacementBatch.Entry] = []
                 for hit in targets {
                     do {
                         let result = try service.replace(
@@ -507,14 +523,20 @@ final class FileReplaceViewModel: ObservableObject {
                             excludingOccurrences: exclusions[hit.id] ?? []
                         )
                         out.append("\(hit.relativePath): \(result.replacements) reemplazo(s). Backup: \(result.backupURL.lastPathComponent)")
+                        if let entry = ReplacementBatch.Entry(result: result) {
+                            entries.append(entry)
+                        }
                     } catch {
                         out.append("\(hit.relativePath): \(error.localizedDescription)")
                     }
                 }
-                return out
+                return (out, entries)
             }.value
 
             replacementLog = lines
+            if let directoryURL = lastQuery?.directoryURL, !entries.isEmpty {
+                recordBatch(directoryURL: directoryURL, rules: replaceRules, entries: entries)
+            }
             let summary = "Reemplazo finalizado en \(targets.count) archivo(s)."
             // Repite la búsqueda —con los textos de reemplazo usados— para que
             // la lista refleje el contenido ya modificado.
@@ -667,6 +689,9 @@ struct ContentView: View {
                 onClose: { viewModel.closePreview() }
             )
         }
+        .sheet(isPresented: $viewModel.isShowingHistory) {
+            ReplacementHistoryView(viewModel: viewModel)
+        }
     }
 
     private var detailPane: some View {
@@ -744,6 +769,14 @@ struct ContentView: View {
                 ProgressView()
                     .controlSize(.small)
             }
+
+            Button {
+                viewModel.isShowingHistory = true
+            } label: {
+                Label("Historial", systemImage: "clock.arrow.circlepath")
+            }
+            .buttonStyle(.bordered)
+            .help("Reemplazos anteriores; desde aquí puedes deshacerlos")
 
             UpdatesButton()
         }

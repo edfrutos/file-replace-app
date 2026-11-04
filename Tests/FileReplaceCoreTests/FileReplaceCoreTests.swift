@@ -435,3 +435,80 @@ struct RuleListParserTests {
         #expect(decoded == recipe)
     }
 }
+
+@Suite("ReplacementHistory")
+struct ReplacementHistoryTests {
+    private func replaceOnce(_ contents: String) throws -> (fixture: TemporaryFixture, fileURL: URL, entry: ReplacementBatch.Entry) {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("a.txt", contents: contents)
+        let rules = [ReplacementRule(find: "alpha", replace: "omega")]
+        let service = FileReplaceService()
+        let hit = try #require(try service.search(directoryURL: fixture.url, rules: rules, recursive: false, maxDepth: 1).hits.first)
+        let entry = try #require(ReplacementBatch.Entry(result: try service.replace(in: hit, rules: rules)))
+        return (fixture, fileURL, entry)
+    }
+
+    @Test("restore puts back the original content and keeps the backup")
+    func restoreRoundTrips() throws {
+        let (_, fileURL, entry) = try replaceOnce("alpha y alpha")
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "omega y omega")
+
+        try FileReplaceService().restore(entry)
+
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "alpha y alpha")
+        #expect(FileManager.default.fileExists(atPath: entry.backupPath))
+    }
+
+    @Test("restore refuses a file edited after the replacement")
+    func restoreRefusesEditedFile() throws {
+        let (_, fileURL, entry) = try replaceOnce("alpha")
+        try "omega, editado a mano".write(to: fileURL, atomically: true, encoding: .utf8)
+
+        #expect(throws: FileReplaceError.fileChangedSinceReplacement(fileURL.path)) {
+            try FileReplaceService().restore(entry)
+        }
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "omega, editado a mano")
+    }
+
+    @Test("restore fails cleanly when the backup is gone")
+    func restoreWithoutBackup() throws {
+        let (_, fileURL, entry) = try replaceOnce("alpha")
+        try FileManager.default.removeItem(at: entry.backupURL)
+
+        #expect(throws: FileReplaceError.backupMissing(entry.backupPath)) {
+            try FileReplaceService().restore(entry)
+        }
+        #expect(try String(contentsOf: fileURL, encoding: .utf8) == "omega")
+    }
+
+    @Test("the store round-trips batches and keeps only the newest ones")
+    func storeRoundTripsAndTrims() throws {
+        let fixture = try TemporaryFixture()
+        let store = ReplacementHistoryStore(fileURL: fixture.url.appendingPathComponent("sub/history.json"))
+        #expect(store.load().isEmpty)
+
+        let entry = ReplacementBatch.Entry(filePath: "/x/a.txt", backupPath: "/x/a.txt.replacer-backup", replacements: 2, writtenDigest: "abc")
+        let batches = (0..<(ReplacementHistoryStore.maxBatches + 5)).map { index in
+            ReplacementBatch(
+                date: Date(timeIntervalSince1970: TimeInterval(index)),
+                directoryPath: "/x",
+                directoryBookmark: Data([1, 2, 3]),
+                rules: [ReplacementRule(find: "a", replace: "b")],
+                entries: [entry]
+            )
+        }
+        try store.save(batches)
+
+        let loaded = store.load()
+        #expect(loaded.count == ReplacementHistoryStore.maxBatches)
+        #expect(loaded == Array(batches.prefix(ReplacementHistoryStore.maxBatches)))
+        #expect(loaded.first?.totalReplacements == 2)
+    }
+
+    @Test("an unreadable history file loads as empty")
+    func corruptStoreIsEmpty() throws {
+        let fixture = try TemporaryFixture()
+        let fileURL = try fixture.write("history.json", contents: "{ no es json")
+        #expect(ReplacementHistoryStore(fileURL: fileURL).load().isEmpty)
+    }
+}

@@ -161,8 +161,10 @@ editor central, pestaña **Signing & Capabilities**:
    que apunta a `Sources/FileReplaceApp/Replacer.entitlements` (el que ya está
    en el repo). Si Xcode creó uno nuevo en la carpeta del proyecto al añadir la
    capability, ábrelo como texto y compáralo: debe tener exactamente
-   `com.apple.security.app-sandbox` y
-   `com.apple.security.files.user-selected.read-write` a `true`; si coincide,
+   `com.apple.security.app-sandbox`,
+   `com.apple.security.files.user-selected.read-write` y (desde 1.4.0, para
+   restaurar desde el historial tras reiniciar)
+   `com.apple.security.files.bookmarks.app-scope` a `true`; si coincide,
    puedes quedarte con cualquiera de los dos y borrar el duplicado.
 
 ### 2.5 Ajustes de build

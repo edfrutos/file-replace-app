@@ -17,6 +17,11 @@ Este proyecto usa versionado semántico.
   el cambio antes → después; se pueden excluir una a una.
 - Aviso cuando se edita el texto a buscar tras la búsqueda: hay que volver a buscar
   para poder reemplazar.
+- **Historial de reemplazos** (botón «Historial»): los últimos 50 lotes con fecha,
+  carpeta, pares y archivos. Se puede **restaurar** un lote entero o un archivo
+  suelto desde su `.replacer-backup`, solo si el archivo no se ha modificado después
+  del reemplazo. Se guarda en `Application Support/Replacer/history.json` con un
+  marcador de seguridad de la carpeta para restaurar tras reiniciar la app.
 
 ### Cambiado
 
@@ -29,7 +34,12 @@ Este proyecto usa versionado semántico.
   `search(…rules:…)` y `replace(in:rules:excludingOccurrences:)`; nuevos errores
   `fileChangedSinceSearch` y `nothingSelected`. `RuleList.swift` con
   `ReplacementRecipe` y `RuleListParser`.
-- Tests de `FileReplaceCore`: 25.
+- `ReplacementHistory.swift` (`ReplacementBatch`, `ReplacementHistoryStore`) y
+  `FileReplaceService.restore(_:)`; nuevos errores `backupMissing` y
+  `fileChangedSinceReplacement`.
+- Entitlement `com.apple.security.files.bookmarks.app-scope`; el target de Xcode
+  usa ya `Sources/FileReplaceApp/Replacer.entitlements` (`CODE_SIGN_ENTITLEMENTS`).
+- Tests de `FileReplaceCore`: 30.
 
 ## [1.3.1] - Sin publicar
 
