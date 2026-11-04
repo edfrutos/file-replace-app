@@ -19,15 +19,15 @@ struct OccurrenceList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("\(hit.count - excluded.count) de \(hit.count) incluidas")
+                Text(tr("\(hit.count - excluded.count) de \(hit.count) incluidas", "\(hit.count - excluded.count) of \(hit.count) included"))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(ReplacerTheme.muted)
 
                 Spacer()
 
-                Button("Incluir todas", action: onIncludeAll)
+                Button(tr("Incluir todas", "Include all"), action: onIncludeAll)
                     .disabled(excluded.isEmpty)
-                Button("Excluir todas", action: onExcludeAll)
+                Button(tr("Excluir todas", "Exclude all"), action: onExcludeAll)
                     .disabled(excluded.count == hit.count)
             }
             .buttonStyle(.borderless)
@@ -43,7 +43,7 @@ struct OccurrenceList: View {
             }
 
             if hit.occurrences.count > Self.maxVisibleRows {
-                Text("Se muestran las primeras \(Self.maxVisibleRows) de \(hit.count). Las demás se reemplazarán salvo que pulses «Excluir todas».")
+                Text(tr("Se muestran las primeras \(Self.maxVisibleRows) de \(hit.count). Las demás se reemplazarán salvo que pulses «Excluir todas».", "Showing the first \(Self.maxVisibleRows) of \(hit.count). The rest will be replaced unless you click “Exclude all”."))
                     .font(.caption2)
                     .foregroundStyle(ReplacerTheme.muted)
             }
@@ -79,7 +79,7 @@ private struct OccurrenceRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(isIncluded ? "Se reemplazará. Pulsa para excluirla." : "Excluida: se dejará como está. Pulsa para incluirla.")
+        .help(isIncluded ? tr("Se reemplazará. Pulsa para excluirla.", "Will be replaced. Click to exclude it.") : tr("Excluida: se dejará como está. Pulsa para incluirla.", "Excluded: it will be left as is. Click to include it."))
     }
 
     /// «…contexto [antes tachado][después] contexto…»; si está excluida solo

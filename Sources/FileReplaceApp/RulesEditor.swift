@@ -14,7 +14,7 @@ struct RulesEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(isSinglePair ? "Buscar y reemplazar" : "\(viewModel.rules.count) pares buscar → reemplazar")
+                Text(isSinglePair ? tr("Buscar y reemplazar", "Find and replace") : tr("\(viewModel.rules.count) pares buscar → reemplazar", "\(viewModel.rules.count) find → replace pairs"))
                     .font(.caption.weight(.bold))
                     .foregroundStyle(ReplacerTheme.muted)
 
@@ -36,12 +36,12 @@ struct RulesEditor: View {
             Button {
                 viewModel.addRule()
             } label: {
-                Label("Añadir par", systemImage: "plus.circle")
+                Label(tr("Añadir par", "Add pair"), systemImage: "plus.circle")
                     .font(.callout.weight(.semibold))
             }
             .buttonStyle(.borderless)
             .foregroundStyle(ReplacerTheme.blue)
-            .help("Busca y reemplaza varios textos a la vez, en una sola pasada")
+            .help(tr("Busca y reemplaza varios textos a la vez, en una sola pasada", "Find and replace several texts at once, in a single pass"))
         }
     }
 }
@@ -59,7 +59,7 @@ private struct RulePairEditor: View {
         } else {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Par \(number)")
+                    Text(tr("Par \(number)", "Pair \(number)"))
                         .font(.caption.weight(.heavy))
                         .foregroundStyle(ReplacerTheme.ink)
                     Spacer()
@@ -67,7 +67,7 @@ private struct RulePairEditor: View {
                         Image(systemName: "minus.circle")
                     }
                     .buttonStyle(.borderless)
-                    .help("Quitar este par")
+                    .help(tr("Quitar este par", "Remove this pair"))
                 }
 
                 fields(editorHeight: 40)
@@ -80,13 +80,13 @@ private struct RulePairEditor: View {
 
     private func fields(editorHeight: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            LabeledInput(title: "Texto a buscar") {
-                PromptTextEditor(text: $find, prompt: "Cadena exacta que quieres localizar")
+            LabeledInput(title: tr("Texto a buscar", "Find")) {
+                PromptTextEditor(text: $find, prompt: tr("Cadena exacta que quieres localizar", "Exact text you want to find"))
                     .frame(minHeight: editorHeight)
             }
 
-            LabeledInput(title: "Texto de reemplazo") {
-                PromptTextEditor(text: $replace, prompt: "Nuevo texto que se escribirá")
+            LabeledInput(title: tr("Texto de reemplazo", "Replace with")) {
+                PromptTextEditor(text: $replace, prompt: tr("Nuevo texto que se escribirá", "New text to write"))
                     .frame(minHeight: editorHeight)
             }
         }
@@ -98,11 +98,11 @@ private struct RecipesMenu: View {
 
     var body: some View {
         Menu {
-            Button("Importar pares desde CSV…") {
+            Button(tr("Importar pares desde CSV…", "Import Pairs from CSV…")) {
                 viewModel.importRulesFromCSV()
             }
 
-            Button("Guardar como receta…") {
+            Button(tr("Guardar como receta…", "Save as Recipe…")) {
                 viewModel.saveCurrentRulesAsRecipe()
             }
             .disabled(viewModel.activeRules.isEmpty)
@@ -110,7 +110,7 @@ private struct RecipesMenu: View {
             if !viewModel.recipes.isEmpty {
                 Divider()
 
-                Section("Recetas guardadas") {
+                Section(tr("Recetas guardadas", "Saved recipes")) {
                     ForEach(viewModel.recipes) { recipe in
                         Button("\(recipe.name) (\(recipe.rules.count))") {
                             viewModel.applyRecipe(recipe)
@@ -118,7 +118,7 @@ private struct RecipesMenu: View {
                     }
                 }
 
-                Menu("Eliminar receta") {
+                Menu(tr("Eliminar receta", "Delete Recipe")) {
                     ForEach(viewModel.recipes) { recipe in
                         Button(recipe.name, role: .destructive) {
                             viewModel.deleteRecipe(recipe)
@@ -127,11 +127,11 @@ private struct RecipesMenu: View {
                 }
             }
         } label: {
-            Label("Recetas", systemImage: "list.bullet.rectangle")
+            Label(tr("Recetas", "Recipes"), systemImage: "list.bullet.rectangle")
                 .font(.caption.weight(.semibold))
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("Guarda y reutiliza listas de pares, o impórtalas desde un CSV")
+        .help(tr("Guarda y reutiliza listas de pares, o impórtalas desde un CSV", "Save and reuse lists of pairs, or import them from a CSV file"))
     }
 }

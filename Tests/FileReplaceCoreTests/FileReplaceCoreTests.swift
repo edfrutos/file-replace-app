@@ -512,3 +512,15 @@ struct ReplacementHistoryTests {
         #expect(ReplacementHistoryStore(fileURL: fileURL).load().isEmpty)
     }
 }
+
+@Suite("AppLanguage")
+struct AppLanguageTests {
+    @Test("picks the first preferred language that is Spanish or English, else English")
+    func resolvesLanguage() {
+        #expect(AppLanguage.resolve(["es-ES", "en-US"]) == .spanish)
+        #expect(AppLanguage.resolve(["en-GB", "es"]) == .english)
+        #expect(AppLanguage.resolve(["fr-FR", "es-MX"]) == .spanish)
+        #expect(AppLanguage.resolve(["de-DE", "fr"]) == .english)
+        #expect(AppLanguage.resolve([]) == .english)
+    }
+}

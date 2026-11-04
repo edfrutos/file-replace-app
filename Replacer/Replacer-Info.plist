@@ -7,6 +7,11 @@
          carpetas en el icono del Dock sin que Replacer pase a ser la app por
          defecto. Finder no ofrece «Abrir con» para carpetas: para eso está el
          servicio de NSServices (clic derecho ▸ Servicios / Acciones rápidas). -->
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>es</string>
+        <string>en</string>
+    </array>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>

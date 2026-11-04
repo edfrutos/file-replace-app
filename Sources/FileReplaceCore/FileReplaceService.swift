@@ -143,35 +143,35 @@ public enum FileReplaceError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .missingDirectory:
-            return "Selecciona un directorio."
+            return tr("Selecciona un directorio.", "Choose a folder.")
         case .invalidDirectory(let path):
-            return "El directorio no existe o no es accesible: \(path)"
+            return tr("El directorio no existe o no es accesible: \(path)", "The folder does not exist or cannot be accessed: \(path)")
         case .emptySearch:
-            return "La cadena de búsqueda no puede estar vacía."
+            return tr("La cadena de búsqueda no puede estar vacía.", "The search text cannot be empty.")
         case .noFilesFound(let scope):
-            return "No se encontró ningún archivo en el alcance indicado: \(scope)"
+            return tr("No se encontró ningún archivo en el alcance indicado: \(scope)", "No files were found in the given scope: \(scope)")
         case .noMatches:
-            return "No se encontraron coincidencias en los archivos revisados."
+            return tr("No se encontraron coincidencias en los archivos revisados.", "No matches were found in the files checked.")
         case .unsupportedFileType(let path):
-            return "El archivo no parece ser texto UTF-8 editable: \(path)"
+            return tr("El archivo no parece ser texto UTF-8 editable: \(path)", "The file does not look like editable UTF-8 text: \(path)")
         case .fileTooLarge(let path):
-            return "El archivo supera el tamaño máximo admitido y se omitió: \(path)"
+            return tr("El archivo supera el tamaño máximo admitido y se omitió: \(path)", "The file exceeds the maximum supported size and was skipped: \(path)")
         case .readFailed(let path):
-            return "No se pudo leer el archivo: \(path)"
+            return tr("No se pudo leer el archivo: \(path)", "Could not read the file: \(path)")
         case .backupFailed(let path):
-            return "No se pudo crear una copia de seguridad del archivo: \(path)"
+            return tr("No se pudo crear una copia de seguridad del archivo: \(path)", "Could not create a backup of the file: \(path)")
         case .notWritable(let path):
-            return "El archivo es de solo lectura y no se puede modificar: \(path)"
+            return tr("El archivo es de solo lectura y no se puede modificar: \(path)", "The file is read-only and cannot be modified: \(path)")
         case .writeFailed(let path):
-            return "No se pudo escribir en el archivo: \(path)"
+            return tr("No se pudo escribir en el archivo: \(path)", "Could not write to the file: \(path)")
         case .fileChangedSinceSearch(let path):
-            return "El archivo cambió después de la búsqueda; vuelve a buscar antes de reemplazar: \(path)"
+            return tr("El archivo cambió después de la búsqueda; vuelve a buscar antes de reemplazar: \(path)", "The file changed after the search; search again before replacing: \(path)")
         case .nothingSelected(let path):
-            return "No hay ninguna coincidencia marcada en el archivo: \(path)"
+            return tr("No hay ninguna coincidencia marcada en el archivo: \(path)", "No match is checked in the file: \(path)")
         case .backupMissing(let path):
-            return "La copia de seguridad ya no existe; no se puede restaurar: \(path)"
+            return tr("La copia de seguridad ya no existe; no se puede restaurar: \(path)", "The backup no longer exists; the file cannot be restored: \(path)")
         case .fileChangedSinceReplacement(let path):
-            return "El archivo se ha modificado después del reemplazo; restaurarlo perdería esos cambios: \(path)"
+            return tr("El archivo se ha modificado después del reemplazo; restaurarlo perdería esos cambios: \(path)", "The file was modified after the replacement; restoring it would lose those changes: \(path)")
         }
     }
 }

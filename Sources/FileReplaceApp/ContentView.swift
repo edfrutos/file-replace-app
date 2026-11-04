@@ -146,7 +146,7 @@ final class FileReplaceViewModel: ObservableObject {
     /// aquí se reemplaza.
     @Published var excludedOccurrences: [SearchHit.ID: Set<Int>] = [:]
     @Published var expandedHitIDs = Set<SearchHit.ID>()
-    @Published var statusMessage = "Selecciona un directorio y define la búsqueda."
+    @Published var statusMessage = tr("Selecciona un directorio y define la búsqueda.", "Choose a folder and set up the search.")
     @Published var isWorking = false
     @Published var lastReport: SearchReport?
     @Published var replacementLog: [String] = []
@@ -256,7 +256,7 @@ final class FileReplaceViewModel: ObservableObject {
 
     func applyRecipe(_ recipe: ReplacementRecipe) {
         rules = recipe.rules.isEmpty ? [EditableRule()] : recipe.rules.map { EditableRule(find: $0.find, replace: $0.replace) }
-        statusMessage = "Receta «\(recipe.name)» cargada: \(recipe.rules.count) par(es). Pulsa «Buscar coincidencias»."
+        statusMessage = tr("Receta «\(recipe.name)» cargada: \(recipe.rules.count) par(es). Pulsa «Buscar coincidencias».", "Recipe “\(recipe.name)” loaded: \(recipe.rules.count) pair(s). Click “Find Matches”.")
     }
 
     func saveCurrentRulesAsRecipe() {
@@ -264,19 +264,19 @@ final class FileReplaceViewModel: ObservableObject {
         guard !current.isEmpty else { return }
 
         let alert = NSAlert()
-        alert.messageText = "Guardar receta"
-        alert.informativeText = "Guarda estos \(current.count) par(es) para reutilizarlos más adelante."
-        alert.addButton(withTitle: "Guardar")
-        alert.addButton(withTitle: "Cancelar")
+        alert.messageText = tr("Guardar receta", "Save Recipe")
+        alert.informativeText = tr("Guarda estos \(current.count) par(es) para reutilizarlos más adelante.", "Save these \(current.count) pair(s) to reuse them later.")
+        alert.addButton(withTitle: tr("Guardar", "Save"))
+        alert.addButton(withTitle: tr("Cancelar", "Cancel"))
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
-        field.placeholderString = "Nombre de la receta"
+        field.placeholderString = tr("Nombre de la receta", "Recipe name")
         alert.accessoryView = field
         alert.window.initialFirstResponder = field
 
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         let name = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else {
-            statusMessage = "La receta necesita un nombre."
+            statusMessage = tr("La receta necesita un nombre.", "The recipe needs a name.")
             return
         }
 
@@ -287,13 +287,13 @@ final class FileReplaceViewModel: ObservableObject {
             recipes.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         }
         storeRecipes()
-        statusMessage = "Receta «\(name)» guardada."
+        statusMessage = tr("Receta «\(name)» guardada.", "Recipe “\(name)” saved.")
     }
 
     func deleteRecipe(_ recipe: ReplacementRecipe) {
         recipes.removeAll { $0.id == recipe.id }
         storeRecipes()
-        statusMessage = "Receta «\(recipe.name)» eliminada."
+        statusMessage = tr("Receta «\(recipe.name)» eliminada.", "Recipe “\(recipe.name)” deleted.")
     }
 
     /// Carga pares desde un CSV/TSV (primera columna buscar, segunda reemplazar)
@@ -306,25 +306,25 @@ final class FileReplaceViewModel: ObservableObject {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.allowedContentTypes = [.commaSeparatedText, .tabSeparatedText, .plainText]
-        panel.prompt = "Importar"
-        panel.message = "Elige un CSV con dos columnas: texto a buscar y texto de reemplazo"
+        panel.prompt = tr("Importar", "Import")
+        panel.message = tr("Elige un CSV con dos columnas: texto a buscar y texto de reemplazo", "Choose a CSV file with two columns: text to find and replacement text")
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         guard let data = try? Data(contentsOf: url),
               let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
-            statusMessage = "No se pudo leer \(url.lastPathComponent)."
+            statusMessage = tr("No se pudo leer \(url.lastPathComponent).", "Could not read \(url.lastPathComponent).")
             return
         }
 
         let imported = RuleListParser.parse(text)
         guard !imported.isEmpty else {
-            statusMessage = "\(url.lastPathComponent) no contiene pares válidos (columna 1: buscar, columna 2: reemplazar)."
+            statusMessage = tr("\(url.lastPathComponent) no contiene pares válidos (columna 1: buscar, columna 2: reemplazar).", "\(url.lastPathComponent) contains no valid pairs (column 1: find, column 2: replace).")
             return
         }
 
         rules = imported.map { EditableRule(find: $0.find, replace: $0.replace) }
-        statusMessage = "Importados \(imported.count) par(es) desde \(url.lastPathComponent). Pulsa «Buscar coincidencias»."
+        statusMessage = tr("Importados \(imported.count) par(es) desde \(url.lastPathComponent). Pulsa «Buscar coincidencias».", "Imported \(imported.count) pair(s) from \(url.lastPathComponent). Click “Find Matches”.")
     }
 
     private func loadRecipes() {
@@ -350,17 +350,17 @@ final class FileReplaceViewModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
-        panel.prompt = "Seleccionar"
-        panel.message = "Elige la carpeta donde buscar"
+        panel.prompt = tr("Seleccionar", "Choose")
+        panel.message = tr("Elige la carpeta donde buscar", "Choose the folder to search in")
 
         guard panel.runModal() == .OK, let url = panel.url else {
             // Con una carpeta ya elegida, cancelar no cambia nada: se conserva
             // el estado de la búsqueda en curso.
             if directoryURL == nil {
                 #if APPSTORE_BUILD
-                statusMessage = "Selección de carpeta cancelada. Pulsa «Seleccionar directorio» para elegir dónde buscar."
+                statusMessage = tr("Selección de carpeta cancelada. Pulsa «Seleccionar directorio» para elegir dónde buscar.", "Folder selection cancelled. Click “Choose Folder” to pick where to search.")
                 #else
-                statusMessage = "Selección de carpeta cancelada o no disponible. Usa el campo de ruta."
+                statusMessage = tr("Selección de carpeta cancelada o no disponible. Usa el campo de ruta.", "Folder selection cancelled or unavailable. Use the path field.")
                 #endif
             }
             return
@@ -373,7 +373,7 @@ final class FileReplaceViewModel: ObservableObject {
     func applyTypedDirectory() {
         let trimmed = directoryPathInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            statusMessage = "Escribe una ruta de directorio en el campo."
+            statusMessage = tr("Escribe una ruta de directorio en el campo.", "Type a folder path in the field.")
             return
         }
 
@@ -382,7 +382,7 @@ final class FileReplaceViewModel: ObservableObject {
 
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
-            statusMessage = "La ruta no existe o no es un directorio: \(expanded)"
+            statusMessage = tr("La ruta no existe o no es un directorio: \(expanded)", "The path does not exist or is not a folder: \(expanded)")
             return
         }
 
@@ -395,17 +395,17 @@ final class FileReplaceViewModel: ObservableObject {
     func openFolder(_ url: URL) {
         let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey])
         guard values?.isDirectory == true else {
-            statusMessage = "«\(url.lastPathComponent)» no es una carpeta. Arrastra la carpeta en la que quieres buscar."
+            statusMessage = tr("«\(url.lastPathComponent)» no es una carpeta. Arrastra la carpeta en la que quieres buscar.", "“\(url.lastPathComponent)” is not a folder. Drag the folder you want to search in.")
             return
         }
         // Una app o un documento de Pages son carpetas para el sistema, pero
         // Finder los muestra como archivos.
         guard values?.isPackage != true else {
-            statusMessage = "«\(url.lastPathComponent)» es un paquete (como una app o un documento de Pages), no una carpeta. Arrastra la carpeta en la que quieres buscar."
+            statusMessage = tr("«\(url.lastPathComponent)» es un paquete (como una app o un documento de Pages), no una carpeta. Arrastra la carpeta en la que quieres buscar.", "“\(url.lastPathComponent)” is a package (like an app or a Pages document), not a folder. Drag the folder you want to search in.")
             return
         }
         guard !isWorking else {
-            statusMessage = "Espera a que termine la operación en curso antes de cambiar de carpeta."
+            statusMessage = tr("Espera a que termine la operación en curso antes de cambiar de carpeta.", "Wait for the current operation to finish before changing folders.")
             return
         }
         closePreview()
@@ -422,7 +422,7 @@ final class FileReplaceViewModel: ObservableObject {
         lastReport = nil
         lastQuery = nil
         replacementLog = []
-        statusMessage = "Directorio: \(url.path). Escribe el texto a buscar y pulsa «Buscar coincidencias»."
+        statusMessage = tr("Directorio: \(url.path). Escribe el texto a buscar y pulsa «Buscar coincidencias».", "Folder: \(url.path). Type the text to find and click “Find Matches”.")
     }
 
     // MARK: - Búsqueda y reemplazo
@@ -466,7 +466,7 @@ final class FileReplaceViewModel: ObservableObject {
         selectedHitIDs = []
         excludedOccurrences = [:]
         expandedHitIDs = []
-        statusMessage = statusPrefix.map { "\($0) Actualizando resultados…" } ?? "Buscando…"
+        statusMessage = statusPrefix.map { tr("\($0) Actualizando resultados…", "\($0) Updating results…") } ?? tr("Buscando…", "Searching…")
 
         Task {
             let outcome: SearchOutcome = await Task.detached(priority: .userInitiated) {
@@ -491,17 +491,17 @@ final class FileReplaceViewModel: ObservableObject {
 
                 let occurrences = report.hits.reduce(0) { $0 + $1.count }
                 var message = report.hits.isEmpty
-                    ? "Ninguna coincidencia en \(report.filesScanned) archivo(s) revisado(s)."
-                    : "\(occurrences) coincidencia(s) en \(report.hits.count) archivo(s) sobre \(report.filesScanned) revisado(s). Revisa y marca lo que quieras reemplazar."
+                    ? tr("Ninguna coincidencia en \(report.filesScanned) archivo(s) revisado(s).", "No matches in \(report.filesScanned) file(s) checked.")
+                    : tr("\(occurrences) coincidencia(s) en \(report.hits.count) archivo(s) sobre \(report.filesScanned) revisado(s). Revisa y marca lo que quieras reemplazar.", "\(occurrences) match(es) in \(report.hits.count) of \(report.filesScanned) file(s) checked. Review and check what you want to replace.")
                 if !report.skippedFiles.isEmpty {
-                    message += " \(report.skippedFiles.count) omitido(s) (binario, no UTF-8 o demasiado grande)."
+                    message += tr(" \(report.skippedFiles.count) omitido(s) (binario, no UTF-8 o demasiado grande).", " \(report.skippedFiles.count) skipped (binary, not UTF-8 or too large).")
                 }
                 if report.reachedResultLimit {
-                    message += " Se alcanzó el límite de resultados; acota con un filtro de nombre o menos profundidad."
+                    message += tr(" Se alcanzó el límite de resultados; acota con un filtro de nombre o menos profundidad.", " The result limit was reached; narrow it down with a name filter or less depth.")
                 }
                 statusMessage = statusPrefix.map { "\($0) \(message)" } ?? message
             } else {
-                let detail = outcome.errorMessage ?? "Error desconocido en la búsqueda."
+                let detail = outcome.errorMessage ?? tr("Error desconocido en la búsqueda.", "Unknown error while searching.")
                 hits = []
                 selectedHitIDs = []
                 lastReport = nil
@@ -519,11 +519,11 @@ final class FileReplaceViewModel: ObservableObject {
 
         let total = targets.reduce(0) { $0 + includedCount(for: $1) }
         let alert = NSAlert()
-        alert.messageText = "Confirmar reemplazo"
-        alert.informativeText = "Se reemplazarán \(total) coincidencia(s) en \(targets.count) archivo(s). Antes de escribir, Replacer creará una copia .replacer-backup junto a cada archivo."
+        alert.messageText = tr("Confirmar reemplazo", "Confirm Replacement")
+        alert.informativeText = tr("Se reemplazarán \(total) coincidencia(s) en \(targets.count) archivo(s). Antes de escribir, Replacer creará una copia .replacer-backup junto a cada archivo.", "\(total) match(es) in \(targets.count) file(s) will be replaced. Before writing, Replacer will create a .replacer-backup copy next to each file.")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Reemplazar")
-        alert.addButton(withTitle: "Cancelar")
+        alert.addButton(withTitle: tr("Reemplazar", "Replace"))
+        alert.addButton(withTitle: tr("Cancelar", "Cancel"))
 
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
@@ -532,7 +532,7 @@ final class FileReplaceViewModel: ObservableObject {
 
         isWorking = true
         replacementLog = []
-        statusMessage = "Reemplazando en \(targets.count) archivo(s)…"
+        statusMessage = tr("Reemplazando en \(targets.count) archivo(s)…", "Replacing in \(targets.count) file(s)…")
 
         Task {
             let (lines, entries): ([String], [ReplacementBatch.Entry]) = await Task.detached(priority: .userInitiated) {
@@ -545,7 +545,7 @@ final class FileReplaceViewModel: ObservableObject {
                             rules: replaceRules,
                             excludingOccurrences: exclusions[hit.id] ?? []
                         )
-                        out.append("\(hit.relativePath): \(result.replacements) reemplazo(s). Backup: \(result.backupURL.lastPathComponent)")
+                        out.append(tr("\(hit.relativePath): \(result.replacements) reemplazo(s). Backup: \(result.backupURL.lastPathComponent)", "\(hit.relativePath): \(result.replacements) replacement(s). Backup: \(result.backupURL.lastPathComponent)"))
                         if let entry = ReplacementBatch.Entry(result: result) {
                             entries.append(entry)
                         }
@@ -560,7 +560,7 @@ final class FileReplaceViewModel: ObservableObject {
             if let directoryURL = lastQuery?.directoryURL, !entries.isEmpty {
                 recordBatch(directoryURL: directoryURL, rules: replaceRules, entries: entries)
             }
-            let summary = "Reemplazo finalizado en \(targets.count) archivo(s)."
+            let summary = tr("Reemplazo finalizado en \(targets.count) archivo(s).", "Replacement finished in \(targets.count) file(s).")
             // Repite la búsqueda —con los textos de reemplazo usados— para que
             // la lista refleje el contenido ya modificado.
             if var query = lastQuery {
@@ -635,10 +635,38 @@ final class FileReplaceViewModel: ObservableObject {
         lastQuery = nil
         replacementLog = []
         if let directoryURL {
-            statusMessage = "Directorio: \(directoryURL.path). Escribe el texto a buscar y pulsa «Buscar coincidencias»."
+            statusMessage = tr("Directorio: \(directoryURL.path). Escribe el texto a buscar y pulsa «Buscar coincidencias».", "Folder: \(directoryURL.path). Type the text to find and click “Find Matches”.")
         } else {
-            statusMessage = "Selecciona un directorio y define la búsqueda."
+            statusMessage = tr("Selecciona un directorio y define la búsqueda.", "Choose a folder and set up the search.")
         }
+    }
+
+    /// Deja la ventana como recién abierta —sin carpeta, pares, filtro ni
+    /// resultados— para empezar otra búsqueda sin reiniciar la app. El historial
+    /// y las recetas se conservan.
+    func startOver() {
+        guard !isWorking else { return }
+
+        let hasWork = directoryURL != nil || !activeRules.isEmpty || !namePattern.isEmpty || !hits.isEmpty
+        if hasWork {
+            let alert = NSAlert()
+            alert.messageText = tr("Empezar de nuevo", "Start Over")
+            alert.informativeText = tr(
+                "Se vaciarán la carpeta, los pares, el filtro y los resultados. El historial y las recetas se conservan.",
+                "The folder, pairs, filter and results will be cleared. History and recipes are kept."
+            )
+            alert.addButton(withTitle: tr("Empezar de nuevo", "Start Over"))
+            alert.addButton(withTitle: tr("Cancelar", "Cancel"))
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+
+        directoryURL = nil
+        directoryPathInput = ""
+        namePattern = ""
+        rules = [EditableRule()]
+        recursive = false
+        maxDepth = 5.0
+        clearResults()
     }
 
     /// Trae Finder a primer plano con `hit` ya seleccionado en su carpeta contenedora.
@@ -646,7 +674,7 @@ final class FileReplaceViewModel: ObservableObject {
     func revealInFinder(_ hit: SearchHit) {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: hit.fileURL.path, isDirectory: &isDirectory) else {
-            statusMessage = "No se pudo localizar en Finder: el archivo ya no existe en \(hit.fileURL.path)."
+            statusMessage = tr("No se pudo localizar en Finder: el archivo ya no existe en \(hit.fileURL.path).", "Could not show it in Finder: the file no longer exists at \(hit.fileURL.path).")
             return
         }
         NSWorkspace.shared.activateFileViewerSelecting([hit.fileURL])
@@ -686,7 +714,7 @@ final class FileReplaceViewModel: ObservableObject {
 }
 
 struct ContentView: View {
-    @StateObject private var viewModel = FileReplaceViewModel()
+    @ObservedObject var viewModel: FileReplaceViewModel
     @ObservedObject private var folderRequests = FolderOpenRequests.shared
     @State private var isDropTargeted = false
 
@@ -746,7 +774,7 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(ReplacerTheme.blue, style: StrokeStyle(lineWidth: 3, dash: [10, 7]))
                 .padding(12)
-            Label("Suelta la carpeta para buscar en ella", systemImage: "folder.badge.plus")
+            Label(tr("Suelta la carpeta para buscar en ella", "Drop the folder to search in it"), systemImage: "folder.badge.plus")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(ReplacerTheme.blue)
                 .padding(.horizontal, 22)
@@ -817,7 +845,7 @@ struct ContentView: View {
                 .shadow(color: ReplacerTheme.blue.opacity(0.25), radius: 14, y: 7)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text("Búsqueda y reemplazo en archivos")
+                Text(tr("Búsqueda y reemplazo en archivos", "Find and replace in files"))
                     .font(.title3.weight(.bold))
                     .foregroundStyle(ReplacerTheme.ink)
                 Text(viewModel.statusMessage)
@@ -834,12 +862,21 @@ struct ContentView: View {
             }
 
             Button {
-                viewModel.isShowingHistory = true
+                viewModel.startOver()
             } label: {
-                Label("Historial", systemImage: "clock.arrow.circlepath")
+                Label(tr("Empezar de nuevo", "Start Over"), systemImage: "arrow.counterclockwise")
             }
             .buttonStyle(.bordered)
-            .help("Reemplazos anteriores; desde aquí puedes deshacerlos")
+            .disabled(viewModel.isWorking)
+            .help(tr("Vacía carpeta, pares y resultados para una búsqueda nueva (⌘N)", "Clears folder, pairs and results for a new search (⌘N)"))
+
+            Button {
+                viewModel.isShowingHistory = true
+            } label: {
+                Label(tr("Historial", "History"), systemImage: "clock.arrow.circlepath")
+            }
+            .buttonStyle(.bordered)
+            .help(tr("Reemplazos anteriores; desde aquí puedes deshacerlos", "Previous replacements; you can undo them from here"))
 
             UpdatesButton()
         }
@@ -865,10 +902,10 @@ struct ContentView: View {
             }
 
             VStack(spacing: 8) {
-                Text("Listo para encontrar cambios")
+                Text(tr("Listo para encontrar cambios", "Ready to find changes"))
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundStyle(ReplacerTheme.ink)
-                Text("Elige un directorio —o arrástralo a esta ventana—, ajusta el filtro de nombre opcional y revisa cada coincidencia antes de reemplazar.")
+                Text(tr("Elige un directorio —o arrástralo a esta ventana—, ajusta el filtro de nombre opcional y revisa cada coincidencia antes de reemplazar.", "Choose a folder —or drag it onto this window—, adjust the optional name filter and review every match before replacing."))
                     .font(.title3)
                     .foregroundStyle(ReplacerTheme.muted)
                     .multilineTextAlignment(.center)
@@ -882,23 +919,23 @@ struct ContentView: View {
     private var resultsToolbar: some View {
         HStack {
             if viewModel.criteriaChanged {
-                Label("Has cambiado el texto a buscar: vuelve a buscar para poder reemplazar", systemImage: "exclamationmark.triangle.fill")
+                Label(tr("Has cambiado el texto a buscar: vuelve a buscar para poder reemplazar", "You changed the text to find: search again to be able to replace"), systemImage: "exclamationmark.triangle.fill")
                     .font(.callout.weight(.semibold))
                     .foregroundStyle(ReplacerTheme.amber)
             } else {
-                Label("\(viewModel.selectedHitIDs.count) de \(viewModel.hits.count) seleccionados", systemImage: "checklist")
+                Label(tr("\(viewModel.selectedHitIDs.count) de \(viewModel.hits.count) seleccionados", "\(viewModel.selectedHitIDs.count) of \(viewModel.hits.count) selected"), systemImage: "checklist")
                     .font(.callout.weight(.semibold))
                     .foregroundStyle(ReplacerTheme.ink)
             }
 
             Spacer()
 
-            Button("Seleccionar todo") {
+            Button(tr("Seleccionar todo", "Select All")) {
                 viewModel.selectAll()
             }
             .disabled(viewModel.selectedHitIDs.count == viewModel.hits.count)
 
-            Button("Deseleccionar todo") {
+            Button(tr("Deseleccionar todo", "Deselect All")) {
                 viewModel.clearSelection()
             }
             .disabled(viewModel.selectedHitIDs.isEmpty)
@@ -906,10 +943,10 @@ struct ContentView: View {
             Button(role: .destructive) {
                 viewModel.clearResults()
             } label: {
-                Label("Limpiar resultados", systemImage: "xmark.circle")
+                Label(tr("Limpiar resultados", "Clear Results"), systemImage: "xmark.circle")
             }
             .disabled(viewModel.isWorking)
-            .help("Descarta los resultados de esta búsqueda")
+            .help(tr("Descarta los resultados de esta búsqueda", "Discards the results of this search"))
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
@@ -926,11 +963,11 @@ struct UpdatesButton: View {
         Button {
             UpdateCenter.presentUpdateOptions()
         } label: {
-            Label("Actualizaciones", systemImage: "arrow.up.right.square")
+            Label(tr("Actualizaciones", "Updates"), systemImage: "arrow.up.right.square")
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
-        .help("Versión \(ReplacerVersion.current.description). Consultar releases privadas")
+        .help(tr("Versión \(ReplacerVersion.current.description). Consultar releases privadas", "Version \(ReplacerVersion.current.description). Check private releases"))
         #endif
     }
 }
@@ -943,11 +980,11 @@ struct SidebarView: View {
             VStack(alignment: .leading, spacing: 14) {
                 brandHeader
 
-                ControlGroupBox(title: "Ubicación", icon: "folder.fill") {
+                ControlGroupBox(title: tr("Ubicación", "Location"), icon: "folder.fill") {
                     Button {
                         viewModel.chooseDirectory()
                     } label: {
-                        Label("Seleccionar directorio", systemImage: "folder.badge.plus")
+                        Label(tr("Seleccionar directorio", "Choose Folder"), systemImage: "folder.badge.plus")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(SoftButtonStyle())
@@ -963,18 +1000,18 @@ struct SidebarView: View {
                             .font(.callout)
                             .onSubmit { viewModel.applyTypedDirectory() }
 
-                        Button("Usar") {
+                        Button(tr("Usar", "Use")) {
                             viewModel.applyTypedDirectory()
                         }
                         .buttonStyle(SoftButtonStyle())
                     }
 
-                    Text("Escribe o pega una ruta y pulsa «Usar» (o Intro). También puedes usar el botón de arriba.")
+                    Text(tr("Escribe o pega una ruta y pulsa «Usar» (o Intro). También puedes usar el botón de arriba.", "Type or paste a path and click “Use” (or press Return). You can also use the button above."))
                         .font(.caption2)
                         .foregroundStyle(ReplacerTheme.muted)
                     #endif
 
-                    Text(viewModel.directoryURL?.path ?? "Sin directorio seleccionado")
+                    Text(viewModel.directoryURL?.path ?? tr("Sin directorio seleccionado", "No folder selected"))
                         .font(.caption)
                         .foregroundStyle(ReplacerTheme.muted)
                         .lineLimit(4)
@@ -985,21 +1022,21 @@ struct SidebarView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
 
-                ControlGroupBox(title: "Búsqueda", icon: "text.viewfinder") {
-                    LabeledInput(title: "Filtro de nombre (opcional)") {
+                ControlGroupBox(title: tr("Búsqueda", "Search"), icon: "text.viewfinder") {
+                    LabeledInput(title: tr("Filtro de nombre (opcional)", "Name filter (optional)")) {
                         NamePatternField(text: $viewModel.namePattern)
                     }
 
                     RulesEditor(viewModel: viewModel)
 
-                    Toggle("Buscar en subdirectorios", isOn: $viewModel.recursive)
+                    Toggle(tr("Buscar en subdirectorios", "Search subfolders"), isOn: $viewModel.recursive)
                         .toggleStyle(.switch)
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Profundidad")
+                            Text(tr("Profundidad", "Depth"))
                             Spacer()
-                            Text("\(Int(viewModel.maxDepth)) niveles")
+                            Text(tr("\(Int(viewModel.maxDepth)) niveles", "\(Int(viewModel.maxDepth)) levels"))
                                 .foregroundStyle(ReplacerTheme.blue)
                                 .fontWeight(.semibold)
                         }
@@ -1012,11 +1049,11 @@ struct SidebarView: View {
                     .disabled(!viewModel.recursive)
                 }
 
-                ControlGroupBox(title: "Acciones", icon: "bolt.fill") {
+                ControlGroupBox(title: tr("Acciones", "Actions"), icon: "bolt.fill") {
                     Button {
                         viewModel.search()
                     } label: {
-                        Label("Buscar coincidencias", systemImage: "magnifyingglass")
+                        Label(tr("Buscar coincidencias", "Find Matches"), systemImage: "magnifyingglass")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(PrimaryActionButtonStyle())
@@ -1026,7 +1063,7 @@ struct SidebarView: View {
                     Button(role: .destructive) {
                         viewModel.replaceSelected()
                     } label: {
-                        Label("Reemplazar seleccionados", systemImage: "arrow.triangle.2.circlepath")
+                        Label(tr("Reemplazar seleccionados", "Replace Selected"), systemImage: "arrow.triangle.2.circlepath")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(SoftButtonStyle(tint: ReplacerTheme.amber))
@@ -1047,7 +1084,7 @@ struct SidebarView: View {
                 Text("Replacer")
                     .font(.system(size: 26, weight: .heavy, design: .rounded))
                     .foregroundStyle(ReplacerTheme.ink)
-                Text("Encuentra. Revisa. Sustituye.")
+                Text(tr("Encuentra. Revisa. Sustituye.", "Find. Review. Replace."))
                     .font(.callout.weight(.medium))
                     .foregroundStyle(ReplacerTheme.muted)
             }
@@ -1108,7 +1145,7 @@ struct NamePatternField: View {
                 .autocorrectionDisabled(true)
                 .font(.callout)
 
-            Text("Patrón glob sobre el nombre. Vacío = todos los archivos.")
+            Text(tr("Patrón glob sobre el nombre. Vacío = todos los archivos.", "Glob pattern on the file name. Empty = all files."))
                 .font(.caption2)
                 .foregroundStyle(ReplacerTheme.muted)
         }
@@ -1242,8 +1279,8 @@ struct HitRow<Occurrences: View>: View {
 
     private var countLabel: String {
         includedCount == hit.count
-            ? "\(hit.count) coincidencia(s)"
-            : "\(includedCount) de \(hit.count) coincidencia(s)"
+            ? tr("\(hit.count) coincidencia(s)", "\(hit.count) match(es)")
+            : tr("\(includedCount) de \(hit.count) coincidencia(s)", "\(includedCount) of \(hit.count) match(es)")
     }
 
     var body: some View {
@@ -1252,7 +1289,7 @@ struct HitRow<Occurrences: View>: View {
 
             Button(action: onToggleExpanded) {
                 Label(
-                    isExpanded ? "Ocultar coincidencias" : "Revisar coincidencias una a una",
+                    isExpanded ? tr("Ocultar coincidencias", "Hide matches") : tr("Revisar coincidencias una a una", "Review matches one by one"),
                     systemImage: isExpanded ? "chevron.down" : "chevron.right"
                 )
                 .font(.caption.weight(.semibold))
@@ -1323,12 +1360,12 @@ struct HitRow<Occurrences: View>: View {
                     Button(action: onRevealInFinder) {
                         Image(systemName: "folder")
                     }
-                    .help("Mostrar en Finder")
+                    .help(tr("Mostrar en Finder", "Show in Finder"))
 
                     Button(action: onViewContent) {
                         Image(systemName: "doc.text.magnifyingglass")
                     }
-                    .help("Ver contenido completo")
+                    .help(tr("Ver contenido completo", "View full content"))
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(ReplacerTheme.muted)
@@ -1342,7 +1379,7 @@ struct ReplacementLogView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
-            Label("Resultado", systemImage: "checkmark.seal.fill")
+            Label(tr("Resultado", "Result"), systemImage: "checkmark.seal.fill")
                 .font(.headline.weight(.bold))
                 .foregroundStyle(ReplacerTheme.teal)
 
@@ -1390,7 +1427,7 @@ struct FileContentPreviewView: View {
 
                 Spacer()
 
-                Text("\(hit.count) coincidencia(s)")
+                Text(tr("\(hit.count) coincidencia(s)", "\(hit.count) match(es)"))
                     .font(.caption.weight(.bold))
                     .foregroundStyle(ReplacerTheme.blue)
                     .padding(.horizontal, 9)
@@ -1412,7 +1449,7 @@ struct FileContentPreviewView: View {
     private var contentBody: some View {
         Group {
             if isLoading {
-                ProgressView("Cargando contenido…")
+                ProgressView(tr("Cargando contenido…", "Loading content…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage {
                 VStack(spacing: 10) {
@@ -1438,12 +1475,12 @@ struct FileContentPreviewView: View {
 
     private var footer: some View {
         HStack {
-            Button("Mostrar en Finder", action: onRevealInFinder)
+            Button(tr("Mostrar en Finder", "Show in Finder"), action: onRevealInFinder)
                 .buttonStyle(SoftButtonStyle())
 
             Spacer()
 
-            Button("Cerrar", action: onClose)
+            Button(tr("Cerrar", "Close"), action: onClose)
                 .buttonStyle(SoftButtonStyle())
         }
         .padding(18)

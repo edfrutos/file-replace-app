@@ -42,18 +42,18 @@ extension FileReplaceViewModel {
         guard !pending.isEmpty, !isWorking else { return }
 
         let alert = NSAlert()
-        alert.messageText = "Restaurar archivos"
-        alert.informativeText = "Se devolverán \(pending.count) archivo(s) al contenido que tenían antes de este reemplazo. Si alguno se ha modificado después, se dejará como está."
+        alert.messageText = tr("Restaurar archivos", "Restore Files")
+        alert.informativeText = tr("Se devolverán \(pending.count) archivo(s) al contenido que tenían antes de este reemplazo. Si alguno se ha modificado después, se dejará como está.", "\(pending.count) file(s) will go back to the content they had before this replacement. Any file modified since then will be left as is.")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Restaurar")
-        alert.addButton(withTitle: "Cancelar")
+        alert.addButton(withTitle: tr("Restaurar", "Restore"))
+        alert.addButton(withTitle: tr("Cancelar", "Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         guard let folderURL = folderAccessURL(for: batch) else { return }
 
         let service = self.service
         isWorking = true
-        statusMessage = "Restaurando \(pending.count) archivo(s)…"
+        statusMessage = tr("Restaurando \(pending.count) archivo(s)…", "Restoring \(pending.count) file(s)…")
 
         Task {
             let accessing = folderURL.startAccessingSecurityScopedResource()
@@ -81,7 +81,7 @@ extension FileReplaceViewModel {
                     lines.append("\(name): \(error)")
                 } else {
                     restored += 1
-                    lines.append("\(name): restaurado desde \(entry.backupURL.lastPathComponent)")
+                    lines.append(tr("\(name): restaurado desde \(entry.backupURL.lastPathComponent)", "\(name): restored from \(entry.backupURL.lastPathComponent)"))
                     markRestored(entry.id, in: batch.id, at: now)
                 }
             }
@@ -89,17 +89,17 @@ extension FileReplaceViewModel {
 
             replacementLog = lines
             isWorking = false
-            refreshResults(statusPrefix: "Restaurados \(restored) de \(pending.count) archivo(s).")
+            refreshResults(statusPrefix: tr("Restaurados \(restored) de \(pending.count) archivo(s).", "Restored \(restored) of \(pending.count) file(s)."))
         }
     }
 
     func clearHistory() {
         let alert = NSAlert()
-        alert.messageText = "Vaciar historial"
-        alert.informativeText = "Se olvidarán todos los reemplazos anteriores y ya no podrás restaurarlos desde aquí. Las copias .replacer-backup no se borran."
+        alert.messageText = tr("Vaciar historial", "Clear History")
+        alert.informativeText = tr("Se olvidarán todos los reemplazos anteriores y ya no podrás restaurarlos desde aquí. Las copias .replacer-backup no se borran.", "All previous replacements will be forgotten and you will no longer be able to restore them from here. The .replacer-backup copies are not deleted.")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Vaciar")
-        alert.addButton(withTitle: "Cancelar")
+        alert.addButton(withTitle: tr("Vaciar", "Clear"))
+        alert.addButton(withTitle: tr("Cancelar", "Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         history = []
@@ -117,7 +117,7 @@ extension FileReplaceViewModel {
         do {
             try historyStore.save(history)
         } catch {
-            statusMessage = "No se pudo guardar el historial: \(error.localizedDescription)"
+            statusMessage = tr("No se pudo guardar el historial: \(error.localizedDescription)", "Could not save the history: \(error.localizedDescription)")
         }
     }
 
@@ -152,15 +152,15 @@ extension FileReplaceViewModel {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.directoryURL = folderURL
-        panel.prompt = "Dar acceso"
-        panel.message = "Para restaurar, Replacer necesita permiso para escribir en «\(folderURL.lastPathComponent)». Selecciona esa carpeta."
+        panel.prompt = tr("Dar acceso", "Grant Access")
+        panel.message = tr("Para restaurar, Replacer necesita permiso para escribir en «\(folderURL.lastPathComponent)». Selecciona esa carpeta.", "To restore, Replacer needs permission to write to “\(folderURL.lastPathComponent)”. Select that folder.")
 
         guard panel.runModal() == .OK, let url = panel.url else {
-            statusMessage = "Restauración cancelada: no se dio acceso a la carpeta."
+            statusMessage = tr("Restauración cancelada: no se dio acceso a la carpeta.", "Restore cancelled: access to the folder was not granted.")
             return nil
         }
         guard batch.directoryPath.hasPrefix(url.standardizedFileURL.path) else {
-            statusMessage = "Esa carpeta no contiene los archivos del reemplazo. Selecciona \(batch.directoryPath)."
+            statusMessage = tr("Esa carpeta no contiene los archivos del reemplazo. Selecciona \(batch.directoryPath).", "That folder does not contain the replaced files. Select \(batch.directoryPath).")
             return nil
         }
         return url
@@ -179,9 +179,9 @@ extension ReplacementBatch {
     /// «a» → «b» de los primeros pares, para reconocer el lote de un vistazo.
     var rulesSummary: String {
         let shown = rules.prefix(3).map { rule in
-            "«\(rule.find)» → «\(rule.replace)»"
+            tr("«\(rule.find)» → «\(rule.replace)»", "“\(rule.find)” → “\(rule.replace)”")
         }
-        let more = rules.count > shown.count ? " y \(rules.count - shown.count) más" : ""
+        let more = rules.count > shown.count ? tr(" y \(rules.count - shown.count) más", " and \(rules.count - shown.count) more") : ""
         return shown.joined(separator: "  ·  ") + more
     }
 }
@@ -209,10 +209,10 @@ struct ReplacementHistoryView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Historial de reemplazos")
+            Text(tr("Historial de reemplazos", "Replacement History"))
                 .font(.headline.weight(.bold))
                 .foregroundStyle(ReplacerTheme.ink)
-            Text("Deshaz un reemplazo devolviendo los archivos a su copia .replacer-backup. Un archivo solo se restaura si nadie lo ha modificado después del reemplazo.")
+            Text(tr("Deshaz un reemplazo devolviendo los archivos a su copia .replacer-backup. Un archivo solo se restaura si nadie lo ha modificado después del reemplazo.", "Undo a replacement by returning the files to their .replacer-backup copy. A file is only restored if nobody has modified it since the replacement."))
                 .font(.callout)
                 .foregroundStyle(ReplacerTheme.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -227,7 +227,7 @@ struct ReplacementHistoryView: View {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 34))
                     .foregroundStyle(ReplacerTheme.muted)
-                Text("Aún no has reemplazado nada.")
+                Text(tr("Aún no has reemplazado nada.", "You have not replaced anything yet."))
                     .font(.callout)
                     .foregroundStyle(ReplacerTheme.muted)
             }
@@ -255,7 +255,7 @@ struct ReplacementHistoryView: View {
             Button(role: .destructive) {
                 viewModel.clearHistory()
             } label: {
-                Label("Vaciar historial", systemImage: "trash")
+                Label(tr("Vaciar historial", "Clear History"), systemImage: "trash")
             }
             .disabled(viewModel.history.isEmpty || viewModel.isWorking)
 
@@ -266,7 +266,7 @@ struct ReplacementHistoryView: View {
                     .controlSize(.small)
             }
 
-            Button("Cerrar") {
+            Button(tr("Cerrar", "Close")) {
                 dismiss()
             }
             .buttonStyle(SoftButtonStyle())
@@ -311,8 +311,8 @@ private struct BatchCard: View {
                 Spacer()
 
                 Text(isFullyRestored
-                     ? "Restaurado"
-                     : "\(batch.totalReplacements) reemplazo(s) en \(batch.entries.count) archivo(s)")
+                     ? tr("Restaurado", "Restored")
+                     : tr("\(batch.totalReplacements) reemplazo(s) en \(batch.entries.count) archivo(s)", "\(batch.totalReplacements) replacement(s) in \(batch.entries.count) file(s)"))
                     .font(.caption.weight(.bold))
                     .foregroundStyle(isFullyRestored ? ReplacerTheme.teal : ReplacerTheme.blue)
                     .padding(.horizontal, 9)
@@ -327,7 +327,7 @@ private struct BatchCard: View {
                 .lineLimit(2)
 
             HStack {
-                Button(isExpanded ? "Ocultar archivos" : "Ver archivos", action: onToggleExpanded)
+                Button(isExpanded ? tr("Ocultar archivos", "Hide files") : tr("Ver archivos", "Show files"), action: onToggleExpanded)
                     .buttonStyle(.borderless)
                     .font(.caption.weight(.semibold))
 
@@ -336,10 +336,10 @@ private struct BatchCard: View {
                 Button {
                     onRestore(batch.pendingEntries)
                 } label: {
-                    Label(batch.entries.count == 1 ? "Restaurar" : "Restaurar todo", systemImage: "arrow.uturn.backward")
+                    Label(batch.entries.count == 1 ? tr("Restaurar", "Restore") : tr("Restaurar todo", "Restore all"), systemImage: "arrow.uturn.backward")
                 }
                 .disabled(isFullyRestored || isWorking)
-                .help("Devuelve los archivos de este reemplazo a su contenido anterior")
+                .help(tr("Devuelve los archivos de este reemplazo a su contenido anterior", "Returns the files of this replacement to their previous content"))
             }
 
             if isExpanded {
@@ -386,18 +386,18 @@ private struct EntryRow: View {
                 .truncationMode(.middle)
                 .help(entry.filePath)
 
-            Text("\(entry.replacements) reemplazo(s)")
+            Text(tr("\(entry.replacements) reemplazo(s)", "\(entry.replacements) replacement(s)"))
                 .font(.caption2)
                 .foregroundStyle(ReplacerTheme.muted)
 
             Spacer()
 
             if let restoredAt = entry.restoredAt {
-                Label("Restaurado \(restoredAt.formatted(date: .omitted, time: .shortened))", systemImage: "checkmark.circle.fill")
+                Label(tr("Restaurado \(restoredAt.formatted(date: .omitted, time: .shortened))", "Restored \(restoredAt.formatted(date: .omitted, time: .shortened))"), systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(ReplacerTheme.teal)
             } else {
-                Button("Restaurar", action: onRestore)
+                Button(tr("Restaurar", "Restore"), action: onRestore)
                     .buttonStyle(.borderless)
                     .font(.caption.weight(.semibold))
                     .disabled(isWorking)

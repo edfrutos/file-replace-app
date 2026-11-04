@@ -15,7 +15,9 @@ let package = Package(
         .target(name: "FileReplaceCore"),
         .executableTarget(
             name: "FileReplaceApp",
-            dependencies: ["FileReplaceCore"]
+            dependencies: ["FileReplaceCore"],
+            // Lo usa el target de Xcode (App Store); el DMG no lleva sandbox.
+            exclude: ["Replacer.entitlements"]
         ),
         .testTarget(
             name: "FileReplaceCoreTests",

@@ -29,6 +29,12 @@ Este proyecto usa versionado semántico.
   derecho en una carpeta ▸ Servicios) y carpetas soltadas en el icono del Dock,
   también con la app cerrada. Replacer se declara para carpetas con rango
   `Alternate`, así que no pasa a ser la app por defecto.
+- **Interfaz en inglés.** Replacer usa el primero de los idiomas preferidos que
+  sea español o inglés (inglés si no hay ninguno). Nueva opción **Idioma** en
+  Ajustes (Sistema, Español, English), con botón para reiniciar la app y aplicarlo.
+- **Empezar de nuevo** (botón en la cabecera y `Archivo ▸ Empezar de nuevo`, ⌘N):
+  vacía carpeta, pares, filtro y resultados sin cerrar la app; conserva historial
+  y recetas.
 
 ### Cambiado
 
@@ -49,7 +55,15 @@ Este proyecto usa versionado semántico.
 - `Replacer/Replacer-Info.plist` (`INFOPLIST_FILE`) con `CFBundleDocumentTypes`
   y `NSServices`; Xcode lo fusiona con el Info.plist generado.
   `build-macos-app.sh` añade las mismas claves al DMG.
-- Tests de `FileReplaceCore`: 30.
+- `Localization.swift`: `AppLanguage` y `tr("español", "English")`; los textos
+  van en el código porque el ejecutable de SwiftPM no empaqueta recursos. Los
+  mensajes de `FileReplaceError` también se traducen.
+- `CFBundleLocalizations` (`es`, `en`), región `en` en el proyecto de Xcode y
+  `en.lproj/ServicesMenu.strings` para el nombre del servicio.
+- `FileReplaceViewModel` vive en `FileReplaceApp` para que los comandos de menú
+  lleguen a él; `AppDelegate` es `@MainActor`.
+- `Package.swift` excluye `Replacer.entitlements` del target de SwiftPM.
+- Tests de `FileReplaceCore`: 31.
 
 ## [1.3.1] - Sin publicar
 

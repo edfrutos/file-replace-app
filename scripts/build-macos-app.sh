@@ -27,6 +27,9 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp ".build/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 cp "Assets/AppIcon/Replacer.icns" "$RESOURCES_DIR/Replacer.icns"
+# Nombre del servicio de Finder en inglés; el resto de textos van en el código.
+mkdir -p "$RESOURCES_DIR/en.lproj"
+cp "Replacer/Replacer/en.lproj/ServicesMenu.strings" "$RESOURCES_DIR/en.lproj/"
 
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -53,6 +56,13 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>es</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>es</string>
+        <string>en</string>
+    </array>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
