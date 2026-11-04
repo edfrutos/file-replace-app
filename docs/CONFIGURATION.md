@@ -31,8 +31,8 @@ La configuración principal está en `Package.swift`:
 - Icono generado: `Assets/AppIcon/Replacer.icns`
 - Bundle identifier: `local.replacer.app`
 - Fuente de versión: `Sources/FileReplaceCore/ReplacerBuildInfo.swift` (`ReplacerBuildInfo.version`)
-- Versión mostrada actualmente: `1.3.1`
-- Build del bundle: `5`
+- Versión mostrada actualmente: `1.4.0`
+- Build del bundle: `6`
 - macOS mínimo del bundle: `14.0`
 - Firma: ad-hoc local con `codesign --sign -`
 
@@ -46,8 +46,10 @@ La configuración principal está en `Package.swift`:
 
 - Scheme compartido: `Replacer App Store`
 - Bundle identifier: `com.edefrutos.Replacer`
-- Versión: `1.3.1` (`MARKETING_VERSION`, a mano igual que `ReplacerBuildInfo.version`)
-- Build: `4` (`CURRENT_PROJECT_VERSION`; el `3` es el de 1.3.0, enviado a revisión)
+- Versión: `1.4.0` (`MARKETING_VERSION`, a mano igual que `ReplacerBuildInfo.version`)
+- Build: `5` (`CURRENT_PROJECT_VERSION`; el `3` fue el de 1.3.0 y el `4` el de 1.3.1, solo en TestFlight)
+- Info.plist: generado por Xcode y fusionado con `Replacer/Replacer-Info.plist` (carpetas en el Dock, servicio de Finder, idiomas `es` y `en`)
+- Entitlements: `Sources/FileReplaceApp/Replacer.entitlements` (sandbox, archivos elegidos por el usuario y marcadores de seguridad)
 - macOS mínimo: `14.0`
 - Región de desarrollo: `es`
 
@@ -56,6 +58,12 @@ La configuración principal está en `Package.swift`:
 | Clave `UserDefaults` | Valores | Uso |
 |---|---|---|
 | `replacerAppearanceMode` | `light`, `dark`, `system` (por defecto) | Apariencia elegida en `Ajustes…` |
+| `replacerRecipes` | JSON de `[ReplacementRecipe]` | Recetas de pares guardadas |
+| `AppleLanguages` | `["es"]`, `["en"]` o ausente (sistema) | Idioma elegido en `Ajustes…`; se aplica al arrancar |
+
+El historial de reemplazos (últimos 50 lotes, con un marcador de seguridad de
+cada carpeta) se guarda en `~/Library/Application Support/Replacer/history.json`;
+con sandbox, dentro del contenedor de la app.
 
 ## Comprobación De Actualizaciones
 

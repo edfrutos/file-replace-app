@@ -38,11 +38,22 @@ Este proyecto usa versionado semántico.
 
 ### Cambiado
 
+- Vuelve el icono de cuero, ya ajustado a la rejilla de macOS (margen, esquinas
+  transparentes y sombra). `scripts/generate-icon.swift` lo escala desde
+  `Assets/AppIcon/Replacer-master.png` en vez de dibujar el glifo azul.
 - Antes de escribir se comprueba que el archivo no haya cambiado desde la búsqueda
   (huella FNV-1a del contenido); si cambió, se informa y no se toca.
 
+### Corregido
+
+- Ajustes: la etiqueta «Apariencia» se recortaba a su primera letra porque el
+  control segmentado ocupaba todo el ancho de la ventana.
+
 ### Interno
 
+- Incluye la 1.3.1, que no llegó a publicarse (solo TestFlight, build 4).
+- Versión `1.4.0`; target de Xcode con build `5`; `build-macos-app.sh` con
+  `CFBundleVersion` `6`.
 - `FileReplaceService`: `ReplacementRule`, `MatchOccurrence`,
   `search(…rules:…)` y `replace(in:rules:excludingOccurrences:)`; nuevos errores
   `fileChangedSinceSearch` y `nothingSelected`. `RuleList.swift` con
@@ -64,24 +75,6 @@ Este proyecto usa versionado semántico.
   lleguen a él; `AppDelegate` es `@MainActor`.
 - `Package.swift` excluye `Replacer.entitlements` del target de SwiftPM.
 - Tests de `FileReplaceCore`: 31.
-
-## [1.3.1] - Sin publicar
-
-### Cambiado
-
-- Vuelve el icono de cuero, ya ajustado a la rejilla de macOS (margen, esquinas
-  transparentes y sombra). `scripts/generate-icon.swift` lo escala desde
-  `Assets/AppIcon/Replacer-master.png` en vez de dibujar el glifo azul.
-
-### Corregido
-
-- Ajustes: la etiqueta «Apariencia» se recortaba a su primera letra porque el
-  control segmentado ocupaba todo el ancho de la ventana.
-
-### Interno
-
-- Target de Xcode: versión `1.3.1`, build `4`.
-- `build-macos-app.sh`: `CFBundleVersion` pasa a `5`.
 
 ## [1.3.0] - 2026-09-06
 

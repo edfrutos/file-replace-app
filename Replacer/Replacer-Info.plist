@@ -2,48 +2,43 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Xcode genera el resto de claves (GENERATE_INFOPLIST_FILE) y las fusiona
-         con estas. CFBundleDocumentTypes (rango «Alternate») permite soltar
-         carpetas en el icono del Dock sin que Replacer pase a ser la app por
-         defecto. Finder no ofrece «Abrir con» para carpetas: para eso está el
-         servicio de NSServices (clic derecho ▸ Servicios / Acciones rápidas). -->
-    <key>CFBundleLocalizations</key>
-    <array>
-        <string>es</string>
-        <string>en</string>
-    </array>
-    <key>CFBundleDocumentTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleTypeName</key>
-            <string>Folder</string>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-            <key>LSHandlerRank</key>
-            <string>Alternate</string>
-            <key>LSItemContentTypes</key>
-            <array>
-                <string>public.folder</string>
-            </array>
-        </dict>
-    </array>
-    <key>NSServices</key>
-    <array>
-        <dict>
-            <key>NSMenuItem</key>
-            <dict>
-                <key>default</key>
-                <string>Buscar y reemplazar con Replacer</string>
-            </dict>
-            <key>NSMessage</key>
-            <string>openFolderService</string>
-            <key>NSRequiredContext</key>
-            <dict/>
-            <key>NSSendFileTypes</key>
-            <array>
-                <string>public.folder</string>
-            </array>
-        </dict>
-    </array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Folder</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.folder</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>es</string>
+		<string>en</string>
+	</array>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Buscar y reemplazar con Replacer</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>openFolderService</string>
+			<key>NSRequiredContext</key>
+			<dict/>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>public.folder</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

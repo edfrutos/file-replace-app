@@ -4,6 +4,9 @@ Guía de revisión manual para validar Replacer antes de hacer `git push` o de e
 
 Estado: pasada manual completa al 100%, incluida la funcionalidad de localizar en Finder y ver contenido (2026-09-05).
 
+1.4.0: las secciones 1–17 siguen vigentes; las novedades se validan en la sección 18,
+en el target de Xcode (`Replacer App Store`) y en el DMG.
+
 ## Objetivo
 
 Comprobar que la app macOS nativa localiza una cadena exacta en **cualquier archivo** de un
@@ -309,6 +312,60 @@ Aceptación mínima:
 - [x] La UI web arranca y se marca claramente como versión heredada.
 - [x] `/api/replace` rechaza rutas no localizadas antes por `/api/search`.
 - [x] Binarios y no‑UTF‑8 se rechazan también en la versión web.
+
+## 18. Novedades de 1.4.0
+
+Prepara una carpeta descartable con `a.txt` (`hola mundo, hola`) y `b.txt` (`hola`).
+
+Varios pares y recetas
+
+- [ ] Dos pares `hola→adiós` y `mundo→planeta`: buscar y reemplazar cambia ambos textos
+      en una sola pasada.
+- [ ] Pares `A→B` y `B→C` sobre `A B A`: el resultado es `B C B` (no se encadenan).
+- [ ] `Recetas ▸ Guardar como receta…`, cambiar los pares y volver a cargar la receta.
+- [ ] `Recetas ▸ Importar pares desde CSV…` con `buscar;reemplazar` en la cabecera:
+      se cargan los pares sin la cabecera.
+
+Revisión por coincidencia
+
+- [ ] `Revisar coincidencias una a una` muestra línea, original tachado y nuevo texto.
+- [ ] Excluir una coincidencia y reemplazar: solo cambian las incluidas; el contador
+      muestra «N de M».
+- [ ] Editar el texto a buscar tras buscar: aparece el aviso y `Reemplazar seleccionados`
+      queda desactivado. Cambiar solo el texto de reemplazo no lo desactiva.
+- [ ] Editar un archivo fuera de la app entre buscar y reemplazar: se informa del error
+      y el archivo no se toca.
+
+Historial
+
+- [ ] Tras un reemplazo, `Historial` muestra fecha, carpeta, pares y archivos.
+- [ ] `Restaurar todo` devuelve los archivos a su contenido original; la tarjeta pasa a
+      «Restaurado» y los `.replacer-backup` siguen ahí.
+- [ ] Un archivo editado después del reemplazo no se restaura y se informa.
+- [ ] Cerrar y volver a abrir Replacer y restaurar un lote anterior funciona sin pedir
+      la carpeta (marcador de seguridad, solo App Store).
+
+Carpetas desde fuera de la app
+
+- [ ] Arrastrar una carpeta a la ventana la elige; un archivo o un paquete se rechazan.
+- [ ] Soltar una carpeta en el icono del Dock, con la app abierta y cerrada.
+- [ ] Clic derecho en una carpeta en Finder ▸ Servicios ▸ `Buscar y reemplazar con
+      Replacer`, con la app abierta y cerrada; se abre una sola ventana.
+- [ ] Doble clic en una carpeta sigue abriéndola en Finder.
+
+Idioma y Empezar de nuevo
+
+- [ ] Con el sistema (o `Ajustes ▸ Idioma`) en inglés, toda la interfaz, menús, avisos y
+      errores aparecen en inglés; en español, en español.
+- [ ] `Ajustes ▸ Idioma ▸ English` ▸ `Reiniciar ahora` reabre la app en inglés; `Sistema`
+      la devuelve al idioma del sistema.
+- [ ] `Empezar de nuevo` (botón y ⌘N) pide confirmación y deja la ventana vacía;
+      historial y recetas se conservan.
+
+Build
+
+- [ ] `swift test` pasa con 31 tests; `swift build` compila sin errores.
+- [ ] La versión mostrada es 1.4.0 (build 5 en Xcode).
 
 ## Limpieza
 

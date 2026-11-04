@@ -1,6 +1,6 @@
 # Replacer
 
-Replacer es una utilidad local para macOS que busca, revisa y reemplaza texto en archivos UTF-8 con confirmación explícita y copias de seguridad automáticas. La app permite revisar manualmente las releases disponibles en GitHub.
+Replacer es una utilidad local para macOS que busca, revisa y reemplaza texto en archivos UTF-8 con confirmación explícita y copias de seguridad automáticas. Aplica varios pares «buscar → reemplazar» en una sola pasada, deja revisar y excluir cada coincidencia antes de escribir, y guarda un historial desde el que se puede deshacer un reemplazo. La interfaz está en español e inglés.
 
 La app principal está escrita en SwiftUI y usa un módulo core testeable para localizar archivos, contar coincidencias, rechazar contenido no editable y escribir reemplazos. La versión Flask se conserva como interfaz web heredada.
 
@@ -8,7 +8,7 @@ La app principal está escrita en SwiftUI y usa un módulo core testeable para l
 
 La versión estable actual es [Replacer 1.3.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.3.0), publicada como DMG para distribución limitada en equipos Apple silicon. El registro de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
-La misma versión está en preparación para el Mac App Store (build 3 subido a App Store Connect). Se compila desde el target de Xcode en `Replacer/Replacer.xcodeproj`; ver [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md).
+La 1.4.0 (sin publicar todavía) está en preparación para el Mac App Store, tras el rechazo de la 1.3.0 por las guidelines 4.3 y 4.2.6; ver [Notas para App Review](docs/APP_REVIEW_NOTES.md). Se compila desde el target de Xcode en `Replacer/Replacer.xcodeproj`; ver [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md).
 
 El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es válido para pruebas y distribución local controlada, pero Gatekeeper lo rechaza en su validación automática al descargarlo en otros equipos. El destinatario debe verificar el origen y usar `Abrir` desde el menú contextual; macOS puede exigir además confirmar `Abrir igualmente` en Privacidad y seguridad. La distribución pública sin esas advertencias requiere una firma Developer ID y notarización.
 
@@ -28,7 +28,8 @@ scripts/
   captura-appstore.sh   # Capturas 2880×1800 para el Mac App Store
 Replacer/
   Replacer.xcodeproj/   # Target de Xcode del Mac App Store (scheme «Replacer App Store»)
-  Replacer/             # Entitlements, assets e Info; ContentView y FileReplaceApp son enlaces a Sources/
+  Replacer/             # Assets y en.lproj; los .swift son enlaces a Sources/FileReplaceApp
+  Replacer-Info.plist   # Claves que Xcode fusiona con el Info.plist generado
 Assets/
   capturas/AppleStore/  # Capturas de la ficha del Mac App Store
 docs/
@@ -124,7 +125,7 @@ Los tests usan archivos temporales y no modifican contenido real del repositorio
 
 Replacer solo procesa archivos que parecen texto UTF-8 editable. Rechaza archivos con bytes nulos o contenido no decodificable como UTF-8 para evitar corrupción de binarios. Aun así, prueba los reemplazos en una carpeta descartable o con archivos bajo control de versiones.
 
-Antes de modificar un archivo, la app crea una copia junto al original con sufijo `.replacer-backup`. Si ya existe una copia con ese nombre, usa un sufijo incremental.
+Antes de modificar un archivo, la app crea una copia junto al original con sufijo `.replacer-backup`. Si ya existe una copia con ese nombre, usa un sufijo incremental. Tampoco escribe en un archivo que haya cambiado desde la búsqueda, y desde el historial solo restaura un archivo si sigue exactamente como lo dejó el reemplazo.
 
 La versión Flask se conserva como legado. Si se ejecuta con `python app.py`, el endpoint de reemplazo solo permite modificar rutas encontradas previamente por la búsqueda de esa misma sesión, rechaza archivos binarios/no UTF-8 y también crea copias `.replacer-backup`.
 
