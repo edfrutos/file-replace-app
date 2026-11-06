@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
-# captura-appstore.sh — Fase 28: captura la ventana de Extractor URL a
-# 2880×1800 px (16:10) para la ficha de la Mac App Store.
+# captura-Replacer.sh — captura la ventana de Replacer a 2880×1800 px (16:10)
+# para la ficha de la Mac App Store.
 #
 # Redimensiona la ventana a 1440×900 puntos y captura ese rectángulo. En una
 # pantalla Retina salen 2880×1800 px; en una no Retina, 1440×900 px (también
 # válido para App Store Connect).
 #
 # USO:
-#   scripts/appstore/captura-appstore.sh <nombre>   # → ~/Desktop/appstore-<nombre>.png
-#   scripts/appstore/captura-appstore.sh --sin-redimensionar <nombre>
+#   scripts/captura-Replacer.sh <nombre>   # → ~/Desktop/appstore-<nombre>.png
+#   ESPERA=5 scripts/captura-Replacer.sh --sin-redimensionar <nombre>
 #
 # Con --sin-redimensionar no mueve ni redimensiona nada: busca la ventana de
 # la app que ya mide 1440×900 y captura su rectángulo con todo lo que haya
 # encima. Sirve para el panel de guardar, que bajo sandbox es otra ventana y,
 # sin esta opción, sería la que se redimensiona. Haz antes una captura normal
 # para dejar la ventana en 1440×900 y después abre el panel.
+#
+# ESPERA son los segundos antes de capturar (0 por defecto): lanza el script y
+# vuelve a la app para abrir el menú, el diálogo o la hoja que quieres capturar.
 #
 # Requisitos:
 #   - La app abierta (proceso «Replacer»).
@@ -35,6 +38,8 @@ PROCESS="${PROCESS:-Replacer}"
 WIDTH=1440
 HEIGHT=900
 OUT="${HOME}/Desktop/appstore-${NAME}.png"
+
+sleep "${ESPERA:-0}"
 
 if ((RESIZE)); then
 	geometry="$(osascript <<OSA

@@ -46,7 +46,7 @@ Antes de tocar Xcode, resuelve esto en developer.apple.com / App Store Connect:
 6. **Capturas de pantalla**: tamaños Mac requeridos por App Store Connect en el
    momento de la subida (suele pedir al menos 1280×800 o 2560×1600). Tómalas de
    la app ya corriendo con datos de ejemplo, no de mockups. Usa
-   `scripts/captura-appstore.sh <nombre>`: deja la ventana en 1440×900 puntos
+   `scripts/captura-Replacer.sh <nombre>`: deja la ventana en 1440×900 puntos
    y guarda `~/Desktop/appstore-<nombre>.png` a 2880×1800 px (Retina), un
    tamaño 16:10 que App Store Connect acepta. Capturas a mano con ⇧⌘4 salen con
    tamaños arbitrarios (p. ej. 2308×1438) y se rechazan.

@@ -25,7 +25,8 @@ scripts/
   build-macos-app.sh    # Genera dist/Replacer.app
   build-dmg.sh          # Genera dist/Replacer-<versión>.dmg
   generate-icon.swift   # Genera el icono (.icns del DMG y asset catalog de Xcode)
-  captura-appstore.sh   # Capturas 2880×1800 para el Mac App Store
+  captura-Replacer.sh   # Capturas 2880×1800 para el Mac App Store
+  preparar-demo.sh      # Datos de ejemplo para capturas y vídeo de App Review
 Replacer/
   Replacer.xcodeproj/   # Target de Xcode del Mac App Store (scheme «Replacer App Store»)
   Replacer/             # Assets y en.lproj; los .swift son enlaces a Sources/FileReplaceApp

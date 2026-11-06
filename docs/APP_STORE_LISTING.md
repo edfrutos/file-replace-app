@@ -168,5 +168,32 @@ Replacer searches for exact text (not regular expressions), so what you type is 
 - **URL de soporte y de privacidad**: ver paso 0.4 de
   [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md).
 - **Capturas**: `Assets/capturas/AppleStore/` (2880×1800), ver paso 0.6. Las de
-  1.3.0 no muestran las novedades: conviene repetirlas con varios pares, la
-  revisión por coincidencia desplegada y el historial, y hacer un juego en inglés.
+  1.3.0 no muestran las novedades: hay que repetirlas con el guion de abajo.
+
+## Capturas 1.4.0
+
+Un juego por idioma, con la app de TestFlight. Elige el idioma en *Ajustes ▸
+Idioma* y vuelve a abrir la app. Datos: `scripts/preparar-demo.sh`.
+
+| Idioma | Carpeta | Pares (*Recetas ▸ Importar pares desde CSV…*) | Prefijo |
+|---|---|---|---|
+| Español | `~/Desktop/Capturas-ES` | `Demo-CSV/pares-capturas.csv` | `es-` |
+| Inglés | `~/Desktop/Capturas-EN` | `Demo-CSV/pairs-screenshots.csv` | `en-` |
+
+La ventana principal se captura con `scripts/captura-Replacer.sh <prefijo><nombre>`,
+que la deja en 1440×900. Las hojas, menús y diálogos (`*`), después, con
+`ESPERA=5 scripts/captura-Replacer.sh --sin-redimensionar <prefijo><nombre>`:
+lánzalo y abre el menú o diálogo antes de que pasen los 5 segundos.
+
+| N.º | Nombre | Qué se ve |
+|---|---|---|
+| 1 | `1-pares` | Los tres pares desplegados y los resultados tras buscar |
+| 2 | `2-revision` | Revisión por coincidencia desplegada en `index.html`, con una excluida |
+| 3 | `3-vista-previa` * | Lupa: archivo completo con las coincidencias resaltadas |
+| 4 | `4-recetas` * | Menú *Recetas* abierto |
+| 5 | `5-confirmar` * | Diálogo de confirmación del reemplazo |
+| 6 | `6-historial` * | Historial con el reemplazo hecho y *Restaurar todo* a la vista |
+| 7 | `7-ajustes` * | Ajustes con apariencia e idioma sobre la ventana principal |
+
+Las capturas no pueden mostrar datos personales: revisa que la ruta visible y el
+historial solo enseñen las carpetas de ejemplo.

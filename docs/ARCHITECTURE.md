@@ -72,7 +72,8 @@ Tests/
 scripts/
   build-macos-app.sh    # Empaquetado manual de dist/Replacer.app
   generate-icon.swift   # Generación de iconos .png/.icns y del asset catalog de Xcode
-  captura-appstore.sh   # Capturas para el Mac App Store
+  captura-Replacer.sh   # Capturas para el Mac App Store
+  preparar-demo.sh      # Datos de ejemplo para capturas y vídeo de App Review
 Replacer/               # Proyecto Xcode del Mac App Store (sandbox, APPSTORE_BUILD)
 docs/                   # Documentación técnica y funcional
 app.py                  # Servidor Flask heredado

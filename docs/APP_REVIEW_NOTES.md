@@ -23,8 +23,10 @@ Antes de enviar:
 ### Grabación de pantalla (1.4.0)
 
 Con el sistema en inglés, o con `Ajustes ▸ Idioma ▸ English`, para que el revisor
-no dependa de traducciones. Prepara `~/Desktop/Demo` con `a.txt`
-(`hello world, hello`), `b.txt` (`hello`) y un `pairs.csv`:
+no dependa de traducciones. Ejecuta `scripts/preparar-demo.sh`, que crea
+`~/Desktop/Demo` con `a.txt` (`hello world, hello`) y `b.txt` (`hello`), y
+`~/Desktop/Demo-CSV/pairs.csv` fuera de esa carpeta, porque dentro saldría entre
+los resultados. Para repetir la toma: `scripts/preparar-demo.sh --reset`.
 
 ```
 find,replace
@@ -35,7 +37,7 @@ world,planet
 1. ⇧⌘5 ▸ Grabar toda la pantalla ▸ Grabar.
 2. Abre Replacer desde el Dock (el vídeo debe empezar con el arranque).
 3. Arrastra la carpeta `Demo` desde Finder a la ventana.
-4. *Recipes ▸ Import Pairs from CSV…* ▸ `pairs.csv`.
+4. *Recipes ▸ Import Pairs from CSV…* ▸ `Demo-CSV/pairs.csv`.
 5. *Find Matches*. Despliega *Review matches one by one* en `a.txt` y excluye una
    coincidencia.
 6. Marca los dos archivos ▸ *Replace Selected* ▸ confirmar.
