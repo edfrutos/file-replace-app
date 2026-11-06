@@ -3,7 +3,9 @@
 
 Textos de la ficha de Replacer en App Store Connect. Idioma principal: español;
 desde 1.4.0 hay también localización en inglés (**Información de la app ▸
-Localizable** ▸ añadir *English (U.S.)*, y rellenar los mismos campos).
+Información que se puede traducir** ▸ menú *Español (España)*, arriba a la
+derecha ▸ añadir *Inglés (EE. UU.)*, y rellenar los mismos campos, también en la
+página de la versión).
 Revisa que sigan siendo ciertos antes de cada versión: no deben prometer nada que el
 build `APPSTORE_BUILD` no haga.
 
@@ -89,6 +91,15 @@ Replacer busca texto exacto (no expresiones regulares), así que lo que escribes
 ```
 
 ## English (U.S.)
+
+### Name (23/30)
+
+```
+Replacer: Text in Files
+```
+
+«Replacer» a secas ya lo usa otra app en esta localización. En español sí está
+disponible, y el nombre de la app en el Mac sigue siendo «Replacer».
 
 ### Subtitle (27/30)
 
