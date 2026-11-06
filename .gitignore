@@ -67,3 +67,11 @@ xcuserdata/
 
 # Capturas sueltas (pegadas en Claude Code); las de la ficha van en AppleStore/
 Assets/capturas/*.png
+
+# Skills de asistentes de IA instaladas localmente (terceros, reinstalables)
+/.agents/
+/.augment/
+/.claude/
+/.trae/
+/skills/
+/skills-lock.json
