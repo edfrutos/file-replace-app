@@ -77,37 +77,37 @@ The app makes no network connections, uses no third-party SDKs and collects no d
 ### Respuesta a las preguntas
 
 ```text
-Hello, and thank you for the detailed feedback. We have resubmitted Replacer as version 1.4.0 with substantial changes (listed in the review notes), and we answer each question below.
+Hello, and thank you for the detailed feedback. We have resubmitted Replacer as version 1.4.0 with substantial changes (see the review notes). Our answers:
 
 1. WHAT THE APP DOES
-Replacer changes text across many files of a folder in a controlled, reversible way. The user chooses a folder, enters one or more "find -> replace" pairs and searches. Each file is listed with every match, its line number and a before -> after preview; nothing is selected by default, and the user can exclude individual matches. On confirmation, Replacer writes a backup next to each file, applies all pairs in a single pass, refuses to write any file that changed since the search, and records the operation in a history from which any batch or single file can be restored, but only if it was not edited afterwards. The problem it solves: making the same set of text changes across dozens of files (a domain move, a renamed product, a changed path or setting) without opening them one by one and without the risk of an irreversible blind "replace all".
+Replacer changes text across many files of a folder in a controlled, reversible way. The user chooses a folder, enters one or more "find -> replace" pairs and searches. Each file is listed with every match, its line number and a before -> after preview; nothing is selected by default and individual matches can be excluded. On confirmation, Replacer backs up each file, applies all pairs in a single pass, refuses to write files changed since the search, and records the operation in a history from which it can be restored if the files were not edited afterwards. It solves making the same text changes across dozens of files (a domain move, a renamed product) without opening them one by one or risking an irreversible "replace all".
 
 2. INTENDED USERS
-Web developers and designers maintaining static sites and templates; developers updating configuration files, scripts and documentation; technical writers maintaining Markdown or HTML documentation; and people who keep notes or data as plain text. Typically users comfortable with files and folders, but who prefer a native Mac tool with review and undo to command-line tools such as sed.
+Web developers and designers maintaining static sites and templates; developers updating configuration files, scripts and documentation; technical writers working with Markdown or HTML. Users comfortable with files and folders who prefer a native Mac tool with review and undo to command-line tools such as sed.
 
 3. NEED OR GAP
-Command-line tools (sed, perl) are powerful but unforgiving: they apply changes without per-match review and offer no undo beyond optional backup files the user must restore by hand. Full code editors with project-wide replace assume a project open in the editor, and once the edited files are saved and closed there is no history to return to. Replacer is a focused, sandboxed tool built around safety for exactly this task: several pairs applied in one pass without chaining, per-match review before writing, automatic per-file backups, refusal to write files that changed since the search, and a persistent history that restores earlier states only when it is safe. Pair lists can be imported from a spreadsheet (CSV), so a whole migration can be prepared outside the app and reviewed inside it.
+Command-line tools (sed, perl) apply changes without per-match review and offer no undo beyond backups restored by hand. Code editors assume an open project and keep no history once files are saved and closed. Replacer is a focused, sandboxed tool built around safety: several pairs in one pass without chaining, per-match review, automatic backups, refusal to write changed files and a persistent history with safe restore. Pair lists can be imported from CSV.
 
 4. BETA TESTING
-Replacer has not had an external beta. It has been tested by the developer only: on real folders of websites, configuration files and documentation, through TestFlight builds installed on our own Mac, and with an automated test suite of 31 tests covering search, replacement, backups, the refusal to write changed files and the history restore. The 1.4.0 changes come from that use and from your review of 1.3.0: multiple pairs and CSV import (to avoid running the same search several times), per-match review (to keep specific occurrences unchanged), the history with safe restore (to undo a batch without searching for backups by hand) and the English interface.
+No external beta. It was tested by the developer only: on real folders of websites, configuration files and documentation, through TestFlight builds on our own Mac, and with 31 automated tests. The 1.4.0 changes come from that use and from your review of 1.3.0: multiple pairs and CSV import, per-match review, history with safe restore and the English interface.
 
 5. STANDALONE OR SUITE
-Replacer is a standalone product and not part of a suite. The other apps on our developer account have purposes unrelated to Replacer:
-- Gestor de Correos Gmail (on the App Store): organizes a Gmail account from the Mac: batch search, labelling and archiving, automatic rules and .eml export, processed on the user's computer.
-- Extractor URL (not on the App Store): converts a web page into clean Markdown, HTML or plain text.
-- TablaTeca (not on the App Store): organizes personal collections as table catalogues, with rows that hold images, documents and videos, stored on the Mac.
-- GestorTareas (not on the App Store): creates, assigns and tracks issues by marking their exact location on a floor plan, with photos, documents and real-time notifications synced with a web service.
-- EDF-Catálogo (never submitted for review): catalogues of collections and inventories with images, videos and documents, available on the Mac and the web.
+Standalone, not part of a suite. Our other apps have unrelated purposes:
+- Gestor de Correos Gmail (on the App Store): organizes a Gmail account: batch search, labelling, archiving, rules and .eml export.
+- Extractor URL (not on the App Store): converts a web page into Markdown, HTML or plain text.
+- TablaTeca (not on the App Store): table catalogues of personal collections with images, documents and videos.
+- GestorTareas (not on the App Store): tracks issues marked on a floor plan, synced with a web service.
+- EDF-Catálogo (never submitted for review): catalogues of collections and inventories, on the Mac and the web.
 None of them searches or edits the content of the user's files.
 
 6. CONSOLIDATION INTO ANOTHER APP
-No. None of our other apps works with folders of text files, so adding file search and replacement to any of them would be unrelated to their purpose and confusing for their users.
+No. None of our other apps works with folders of text files, so this feature would be unrelated to their purpose.
 
 7. SHARED CODE WITH OUR OTHER APPS
-No. Replacer's code, its core module (search, replacement, backup, history) and its icon were written for this app and are not used by any other app on our account.
+No. Replacer's code, core module and icon were written for this app and are not used by any other app on our account.
 
 8. SHARED CODE WITH THIRD-PARTY APPS
-No. Replacer uses only Apple frameworks (SwiftUI, AppKit, Foundation). It contains no third-party SDK, template or content library.
+No. Replacer uses only Apple frameworks (SwiftUI, AppKit, Foundation), with no third-party SDK, template or content library.
 
 9. CLIENT OR THIRD PARTY
 No. Replacer was conceived, designed and developed by the account holder, Eugenio de Frutos, who provides all of its content and branding. It was not built from a commercial template or app generation service.
