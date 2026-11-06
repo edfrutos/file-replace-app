@@ -75,3 +75,6 @@ Assets/capturas/*.png
 /.trae/
 /skills/
 /skills-lock.json
+
+# Vídeos de App Review: pesan demasiado para el repositorio
+*.mov
