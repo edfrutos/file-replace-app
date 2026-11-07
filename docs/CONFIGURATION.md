@@ -47,7 +47,7 @@ La configuración principal está en `Package.swift`:
 - Scheme compartido: `Replacer App Store`
 - Bundle identifier: `com.edefrutos.Replacer`
 - Versión: `1.4.0` (`MARKETING_VERSION`, a mano igual que `ReplacerBuildInfo.version`)
-- Build: `5` (`CURRENT_PROJECT_VERSION`; el `3` fue el de 1.3.0 y el `4` el de 1.3.1, solo en TestFlight)
+- Build: `6` (`CURRENT_PROJECT_VERSION`; el `3` fue el de 1.3.0, el `4` el de 1.3.1 y el `5` el primero de 1.4.0, estos dos solo en TestFlight)
 - Info.plist: generado por Xcode y fusionado con `Replacer/Replacer-Info.plist` (carpetas en el Dock, servicio de Finder, idiomas `es` y `en`)
 - Entitlements: `Sources/FileReplaceApp/Replacer.entitlements` (sandbox, archivos elegidos por el usuario y marcadores de seguridad)
 - macOS mínimo: `14.0`
