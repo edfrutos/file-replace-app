@@ -48,6 +48,9 @@ Este proyecto usa versionado semántico.
 
 - Ajustes: la etiqueta «Apariencia» se recortaba a su primera letra porque el
   control segmentado ocupaba todo el ancho de la ventana.
+- Ajustes: al pasar de un tema fijo a «Automático», la ventana conservaba el fondo
+  del tema anterior con el texto del nuevo, y las etiquetas no se leían.
+- Ajustes: el aviso de cambio de idioma se truncaba en inglés.
 
 ### Interno
 

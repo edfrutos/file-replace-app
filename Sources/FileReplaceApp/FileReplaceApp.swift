@@ -13,6 +13,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // que se desactivan las pestañas de macOS y su barra. Debe fijarse
         // antes de que se cree la primera ventana.
         NSWindow.allowsAutomaticWindowTabbing = false
+        // Antes de crear la primera ventana, para que no arranque con otro tema.
+        NSApp.appearance = AppearanceMode.stored.nsAppearance
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -78,17 +80,15 @@ enum AppearanceMode: String, CaseIterable, Identifiable {
         }
     }
 
-    var colorScheme: ColorScheme? {
-        switch self {
-        case .light: return .light
-        case .dark: return .dark
-        case .system: return nil
-        }
+    static var stored: AppearanceMode {
+        UserDefaults.standard.string(forKey: appearanceModeDefaultsKey)
+            .flatMap(AppearanceMode.init(rawValue:)) ?? .system
     }
 
-    /// `preferredColorScheme` solo afecta a las vistas SwiftUI; los paneles y
-    /// alertas de AppKit (NSOpenPanel, NSAlert) y la barra de título siguen la
-    /// apariencia de `NSApp`, así que también se fija ahí. `nil` = la del sistema.
+    /// La apariencia se fija solo en `NSApp`, y de ahí la heredan las ventanas,
+    /// las vistas SwiftUI y los paneles de AppKit. No se usa `preferredColorScheme`:
+    /// al pasar de un tema fijo a `nil` deja la apariencia anterior en la ventana,
+    /// y Ajustes se quedaba con fondo claro y texto blanco. `nil` = la del sistema.
     var nsAppearance: NSAppearance? {
         switch self {
         case .light: return NSAppearance(named: .aqua)
@@ -180,8 +180,7 @@ struct FileReplaceApp: App {
         WindowGroup {
             ContentView(viewModel: viewModel)
                 .frame(minWidth: 860, minHeight: 620)
-                .preferredColorScheme(appearanceMode.colorScheme)
-                .onChange(of: appearanceModeRaw, initial: true) {
+                .onChange(of: appearanceModeRaw) {
                     NSApp.appearance = appearanceMode.nsAppearance
                 }
         }
@@ -205,7 +204,6 @@ struct FileReplaceApp: App {
 
         Settings {
             PreferencesView()
-                .preferredColorScheme(appearanceMode.colorScheme)
         }
     }
 }
@@ -242,6 +240,8 @@ struct PreferencesView: View {
                     Text(tr("El idioma cambiará al volver a abrir Replacer.", "The language will change the next time Replacer opens."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                        // En inglés no cabe en una línea y el Form lo truncaría.
+                        .fixedSize(horizontal: false, vertical: true)
                     Button(tr("Reiniciar ahora", "Restart Now")) {
                         LanguagePreference.relaunch()
                     }
