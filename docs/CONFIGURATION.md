@@ -29,12 +29,15 @@ La configuración principal está en `Package.swift`:
 - Salida: `dist/Replacer.app`
 - Ejecutable: `.build/release/Replacer`
 - Icono generado: `Assets/AppIcon/Replacer.icns`
-- Bundle identifier: `local.replacer.app`
+- Bundle identifier: `com.edefrutos.Replacer`, el mismo que la versión del Mac App Store.
+  Los DMG anteriores usaban `local.replacer.app`; la app migra sus ajustes una vez
+  (`LegacyDefaultsMigration`).
 - Fuente de versión: `Sources/FileReplaceCore/ReplacerBuildInfo.swift` (`ReplacerBuildInfo.version`)
-- Versión mostrada actualmente: `1.4.0`
-- Build del bundle: `6`
+- Versión mostrada actualmente: `1.4.1` (solo DMG; la del Mac App Store sigue en `1.4.0`)
+- Build del bundle: `7`
 - macOS mínimo del bundle: `14.0`
-- Firma: ad-hoc local con `codesign --sign -`
+- Firma: ad-hoc local con `codesign --sign -`, o Developer ID con *hardened runtime* si se
+  define `DEVELOPER_ID_APPLICATION` (ver `docs/RELEASING.md`)
 
 `scripts/generate-icon.swift` genera los PNG del iconset y el `.icns` usando `/usr/bin/iconutil`.
 

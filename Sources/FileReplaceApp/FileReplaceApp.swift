@@ -172,6 +172,21 @@ struct FileReplaceApp: App {
     /// Vive aquí y no en la ventana para que los comandos del menú lleguen a él.
     @StateObject private var viewModel = FileReplaceViewModel()
 
+    init() {
+        #if !APPSTORE_BUILD
+        // Los DMG anteriores a la 1.4.1 usaban otro identificador: recupera sus
+        // recetas y ajustes. El idioma se aplica en el siguiente arranque.
+        if let bundleID = Bundle.main.bundleIdentifier,
+           bundleID != LegacyDefaultsMigration.legacyBundleIdentifier {
+            LegacyDefaultsMigration.migrate(
+                legacyDomain: UserDefaults.standard.persistentDomain(
+                    forName: LegacyDefaultsMigration.legacyBundleIdentifier),
+                into: .standard,
+                domainName: bundleID)
+        }
+        #endif
+    }
+
     private var appearanceMode: AppearanceMode {
         AppearanceMode(rawValue: appearanceModeRaw) ?? .system
     }

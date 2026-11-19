@@ -31,8 +31,8 @@ Antes de tocar Xcode, resuelve esto en developer.apple.com / App Store Connect:
    nombre de app (los nombres de App Store son únicos). Si no, decide un nombre
    alternativo.
 2. **Bundle ID explícito**: regístralo en *Certificates, Identifiers & Profiles*
-   (p.ej. `com.edfrutos.Replacer` o `com.edfrutos.replacer-app`). El actual
-   `local.replacer.app` del DMG es solo para uso local y no vale para la tienda.
+   (p.ej. `com.edfrutos.Replacer` o `com.edfrutos.replacer-app`). El registrado
+   es `com.edefrutos.Replacer`; desde la 1.4.1 el DMG usa el mismo.
 3. **SKU, categoría, precio/disponibilidad, clasificación de edad**.
 4. **URL de soporte** y **URL de política de privacidad** (obligatorias aunque la
    app no recoja datos). Ya resueltas con páginas en GitHub:

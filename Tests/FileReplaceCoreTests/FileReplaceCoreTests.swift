@@ -524,3 +524,65 @@ struct AppLanguageTests {
         #expect(AppLanguage.resolve([]) == .english)
     }
 }
+
+@Suite("LegacyDefaultsMigration")
+struct LegacyDefaultsMigrationTests {
+    /// Dominio de ajustes propio de cada test, borrado al terminar.
+    private final class ScratchDefaults {
+        let name = "replacer.tests.\(UUID().uuidString)"
+        let defaults: UserDefaults
+
+        init() throws {
+            defaults = try #require(UserDefaults(suiteName: name))
+        }
+
+        deinit {
+            defaults.removePersistentDomain(forName: name)
+        }
+    }
+
+    @Test("copies recipes, appearance and language from the legacy domain")
+    func copiesLegacyValues() throws {
+        let scratch = try ScratchDefaults()
+        let recipes = Data("recetas".utf8)
+        let legacy: [String: Any] = [
+            "replacerRecipes": recipes,
+            "replacerAppearanceMode": "dark",
+            "AppleLanguages": ["en"],
+            "otraClave": 1
+        ]
+
+        let copied = LegacyDefaultsMigration.migrate(
+            legacyDomain: legacy, into: scratch.defaults, domainName: scratch.name)
+
+        #expect(Set(copied) == ["replacerRecipes", "replacerAppearanceMode", "AppleLanguages"])
+        #expect(scratch.defaults.data(forKey: "replacerRecipes") == recipes)
+        #expect(scratch.defaults.string(forKey: "replacerAppearanceMode") == "dark")
+        #expect(scratch.defaults.object(forKey: "otraClave") == nil)
+    }
+
+    @Test("keeps values already stored under the current identifier")
+    func keepsCurrentValues() throws {
+        let scratch = try ScratchDefaults()
+        scratch.defaults.set("light", forKey: "replacerAppearanceMode")
+
+        let copied = LegacyDefaultsMigration.migrate(
+            legacyDomain: ["replacerAppearanceMode": "dark"], into: scratch.defaults, domainName: scratch.name)
+
+        #expect(copied.isEmpty)
+        #expect(scratch.defaults.string(forKey: "replacerAppearanceMode") == "light")
+    }
+
+    @Test("runs only once, even if the legacy domain changes later")
+    func runsOnce() throws {
+        let scratch = try ScratchDefaults()
+
+        LegacyDefaultsMigration.migrate(legacyDomain: nil, into: scratch.defaults, domainName: scratch.name)
+        let copied = LegacyDefaultsMigration.migrate(
+            legacyDomain: ["replacerAppearanceMode": "dark"], into: scratch.defaults, domainName: scratch.name)
+
+        #expect(copied.isEmpty)
+        #expect(scratch.defaults.bool(forKey: LegacyDefaultsMigration.completedKey))
+        #expect(scratch.defaults.string(forKey: "replacerAppearanceMode") == nil)
+    }
+}

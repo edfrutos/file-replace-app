@@ -6,7 +6,7 @@ La app principal está escrita en SwiftUI y usa un módulo core testeable para l
 
 ## Versión publicada
 
-La versión estable actual es Replacer 1.4.0, publicada el 19 de noviembre de 2026. Se obtiene gratis en el [Mac App Store](https://apps.apple.com/es/app/replacer/id6827086247?mt=12) o como DMG firmado con Developer ID y notarizado por Apple en [efjdev.com/replacer](https://efjdev.com/replacer/). El registro de cambios está en [CHANGELOG.md](CHANGELOG.md).
+La versión estable actual es Replacer 1.4.1, publicada el 19 de noviembre de 2026. Se obtiene gratis en el [Mac App Store](https://apps.apple.com/es/app/replacer/id6827086247?mt=12), donde sigue la 1.4.0 porque su binario no cambia, o como DMG firmado con Developer ID y notarizado por Apple en [efjdev.com/replacer](https://efjdev.com/replacer/). El registro de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
 La versión del Mac App Store se compila desde el target de Xcode en `Replacer/Replacer.xcodeproj`; ver [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md). El DMG se genera con `scripts/build-dmg.sh`; ver [Publicar una release](docs/RELEASING.md). Sin credenciales de Developer ID, el script produce un DMG con firma ad-hoc, solo válido para pruebas: Gatekeeper lo rechaza al descargarlo en otros equipos.
 

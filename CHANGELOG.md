@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Este proyecto usa versionado semántico.
 
+## [1.4.1] - 2026-11-19
+
+Solo DMG. La versión del Mac App Store sigue siendo la 1.4.0, cuyo binario no cambia.
+
+### Cambiado
+
+- El DMG usa el mismo identificador que la versión del Mac App Store,
+  `com.edefrutos.Replacer`, en lugar de `local.replacer.app`. macOS ya no las trata
+  como dos apps distintas.
+
+### Añadido
+
+- Migración única de las recetas, la apariencia y el idioma guardados por los DMG
+  anteriores (`LegacyDefaultsMigration`). No sobrescribe ajustes ya guardados; el
+  idioma se aplica en el siguiente arranque.
+
+### Interno
+
+- Versión `1.4.1`; `build-macos-app.sh` con `CFBundleVersion` `7`. El target de
+  Xcode sigue en `1.4.0` (build `6`).
+
 ## [1.4.0] - 2026-11-19
 
 ### Añadido
@@ -190,6 +211,7 @@ Distribución limitada para Apple Silicon. Firma ad-hoc, sin notarización.
 
 - Primera versión: app macOS SwiftUI con módulo core testeable y versión Flask heredada.
 
+[1.4.1]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.4.1
 [1.4.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.4.0
 [1.3.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.3.0
 [1.2.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.2.0
