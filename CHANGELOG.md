@@ -3,7 +3,7 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Este proyecto usa versionado semántico.
 
-## [1.4.0] - Sin publicar
+## [1.4.0] - 2026-11-19
 
 ### Añadido
 
@@ -55,8 +55,9 @@ Este proyecto usa versionado semántico.
 ### Interno
 
 - Incluye la 1.3.1, que no llegó a publicarse (solo TestFlight, build 4).
-- Versión `1.4.0`; target de Xcode con build `5`; `build-macos-app.sh` con
-  `CFBundleVersion` `6`.
+- Versión `1.4.0`; target de Xcode y `build-macos-app.sh` con build `6`.
+- `build-dmg.sh` firma con Developer ID y notariza el DMG si se definen
+  `DEVELOPER_ID_APPLICATION` y `NOTARY_PROFILE`.
 - `FileReplaceService`: `ReplacementRule`, `MatchOccurrence`,
   `search(…rules:…)` y `replace(in:rules:excludingOccurrences:)`; nuevos errores
   `fileChangedSinceSearch` y `nothingSelected`. `RuleList.swift` con
@@ -189,6 +190,7 @@ Distribución limitada para Apple Silicon. Firma ad-hoc, sin notarización.
 
 - Primera versión: app macOS SwiftUI con módulo core testeable y versión Flask heredada.
 
+[1.4.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.4.0
 [1.3.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.3.0
 [1.2.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.2.0
 [1.1.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.1.0

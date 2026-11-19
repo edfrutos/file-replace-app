@@ -6,11 +6,9 @@ La app principal está escrita en SwiftUI y usa un módulo core testeable para l
 
 ## Versión publicada
 
-La versión estable actual es [Replacer 1.3.0](https://github.com/edfrutos/file-replace-app/releases/tag/v1.3.0), publicada como DMG para distribución limitada en equipos Apple silicon. El registro de cambios está en [CHANGELOG.md](CHANGELOG.md).
+La versión estable actual es Replacer 1.4.0, publicada el 19 de noviembre de 2026. Se obtiene gratis en el [Mac App Store](https://apps.apple.com/es/app/replacer/id6827086247?mt=12) o como DMG firmado con Developer ID y notarizado por Apple en [efjdev.com/replacer](https://efjdev.com/replacer/). El registro de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
-La 1.4.0 (sin publicar todavía) está en preparación para el Mac App Store, tras el rechazo de la 1.3.0 por las guidelines 4.3 y 4.2.6; ver [Notas para App Review](docs/APP_REVIEW_NOTES.md). Se compila desde el target de Xcode en `Replacer/Replacer.xcodeproj`; ver [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md).
-
-El artefacto está firmado de forma ad-hoc y no está notarizado por Apple. Es válido para pruebas y distribución local controlada, pero Gatekeeper lo rechaza en su validación automática al descargarlo en otros equipos. El destinatario debe verificar el origen y usar `Abrir` desde el menú contextual; macOS puede exigir además confirmar `Abrir igualmente` en Privacidad y seguridad. La distribución pública sin esas advertencias requiere una firma Developer ID y notarización.
+La versión del Mac App Store se compila desde el target de Xcode en `Replacer/Replacer.xcodeproj`; ver [Publicar en el Mac App Store](docs/APP_STORE_SUBMISSION.md). El DMG se genera con `scripts/build-dmg.sh`; ver [Publicar una release](docs/RELEASING.md). Sin credenciales de Developer ID, el script produce un DMG con firma ad-hoc, solo válido para pruebas: Gatekeeper lo rechaza al descargarlo en otros equipos.
 
 ## Estructura
 
