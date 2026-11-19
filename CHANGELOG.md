@@ -12,6 +12,8 @@ Solo DMG. La versión del Mac App Store sigue siendo la 1.4.0, cuyo binario no c
 - El DMG usa el mismo identificador que la versión del Mac App Store,
   `com.edefrutos.Replacer`, en lugar de `local.replacer.app`. macOS ya no las trata
   como dos apps distintas.
+- «Buscar actualizaciones» abre la página de descarga en efjdev.com en lugar de las
+  releases de GitHub, y ya no describe la distribución como privada.
 
 ### Añadido
 

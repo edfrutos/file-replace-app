@@ -13,7 +13,7 @@ graph TD
     SwiftUI --> Core["FileReplaceCore"]
     Core --> FS["Filesystem local"]
     SwiftUI --> Updates["UpdateCenter"]
-    Updates --> GitHub["Página privada de GitHub Releases"]
+    Updates --> Web["Página de descarga en efjdev.com"]
     UserWeb["Usuario navegador"] --> LegacyUI["static/index.html"]
     LegacyUI --> Flask["app.py Flask heredado"]
     Flask --> FS
@@ -36,7 +36,7 @@ graph TD
 11. La UI anota el lote en el historial (`ReplacementHistoryStore`, JSON en Application Support) con un marcador de seguridad de la carpeta, y repite la última búsqueda (`lastQuery`) para que la lista refleje el estado real de los archivos.
 12. Para restaurar, `FileReplaceService.restore(_:)` comprueba que exista el backup y que el archivo conserve la huella escrita (`fileChangedSinceReplacement` si no), y copia el backup sobre el archivo.
 
-En distribución limitada no se incorporan tokens ni se consulta automáticamente la API privada de GitHub. `UpdateCenter` abre bajo petición la página de releases en el navegador, donde GitHub aplica la sesión y los permisos del destinatario. La acción está disponible en la cabecera y en el menú de la aplicación, solo en el build SwiftPM/DMG: el target del Mac App Store se compila con `APPSTORE_BUILD`, que la oculta junto con el campo de ruta escrita a mano.
+`UpdateCenter` no consulta ninguna API ni guarda credenciales: abre bajo petición la página de Replacer en efjdev.com, que ofrece el último DMG notarizado. La acción está disponible en la cabecera y en el menú de la aplicación, solo en el build SwiftPM/DMG: el target del Mac App Store se compila con `APPSTORE_BUILD`, que la oculta junto con el campo de ruta escrita a mano.
 
 La versión Flask sigue un flujo equivalente para `/api/search` y `/api/replace`, con autorización de reemplazo basada en los resultados encontrados en la sesión del proceso.
 
@@ -56,7 +56,7 @@ La versión Flask sigue un flujo equivalente para `/api/search` y `/api/replace`
 | `FileReplaceViewModel` | `Sources/FileReplaceApp/ContentView.swift` | Estado y acciones de la UI SwiftUI, incluida la previsualización de contenido y la localización en Finder. |
 | `FileContentPreviewView` / `ReadOnlyHighlightedTextView` | `Sources/FileReplaceApp/ContentView.swift` | Hoja de solo lectura que muestra el contenido completo de un resultado con las coincidencias resaltadas. |
 | `AppVersion` | `Sources/FileReplaceCore/AppVersion.swift` | Analiza y compara versiones estables y prereleases. |
-| `UpdateCenter` | `Sources/FileReplaceApp/UpdateCenter.swift` | Abre la página privada de releases sin almacenar credenciales. |
+| `UpdateCenter` | `Sources/FileReplaceApp/UpdateCenter.swift` | Abre la página de descarga en efjdev.com. |
 | `read_text_file` | `app.py` | Lectura estricta UTF-8 de la versión Flask heredada. |
 | `replace_in_file` | `app.py` | Reemplazo heredado con backup previo. |
 
