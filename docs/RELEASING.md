@@ -61,7 +61,34 @@ shasum -a 256 dist/Replacer-<versión>.dmg
   El destinatario debe abrir con clic derecho > `Abrir` y, si hace falta, autorizarla en
   Ajustes del Sistema > Privacidad y seguridad.
 - Comparte la suma SHA‑256 por un canal aparte para que se pueda verificar el DMG.
-- Distribución pública sin advertencias = firma Developer ID + notarización (no cubierto aquí).
+- Distribución pública sin advertencias = firma Developer ID + notarización (ver abajo).
+
+### DMG público firmado y notarizado
+
+Es el que se publica en la página de Replacer en efjdev.com. Hace falta un certificado
+*Developer ID Application* en el llavero y, una sola vez, guardar las credenciales de
+notarización con una contraseña específica de app:
+
+```bash
+xcrun notarytool store-credentials replacer-notary \
+  --apple-id <tu Apple ID> --team-id <TEAMID>
+```
+
+Después, cada release:
+
+```bash
+DEVELOPER_ID_APPLICATION="Developer ID Application: <Nombre> (<TEAMID>)" \
+NOTARY_PROFILE=replacer-notary \
+scripts/build-dmg.sh
+```
+
+El script firma la app con *hardened runtime*, firma el DMG, lo envía a notarizar, grapa
+el ticket, comprueba que Gatekeeper lo acepta e imprime la suma SHA-256. Si falla la
+notarización, `xcrun notarytool log <id> --keychain-profile replacer-notary` explica
+el motivo. Sin esas variables, los scripts siguen generando la versión ad-hoc.
+
+Para publicarlo en efjdev.com, sube `dist/Replacer-<versión>.dmg` en WordPress >
+Medios > Añadir nuevo y enlaza su URL desde el botón «Descargar DMG» de la página.
 
 ## 5. Tag y GitHub Release
 

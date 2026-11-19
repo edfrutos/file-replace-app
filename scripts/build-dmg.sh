@@ -42,4 +42,25 @@ hdiutil create \
 
 hdiutil verify "$DMG_PATH"
 
+# Distribución pública: firma el DMG y lo notariza si hay credenciales.
+# NOTARY_PROFILE es un perfil guardado con `xcrun notarytool store-credentials`.
+if [ -n "${NOTARY_PROFILE:-}" ] && [ -z "${DEVELOPER_ID_APPLICATION:-}" ]; then
+    echo "NOTARY_PROFILE requiere DEVELOPER_ID_APPLICATION: no se notariza una firma ad-hoc." >&2
+    exit 1
+fi
+
+if [ -n "${DEVELOPER_ID_APPLICATION:-}" ]; then
+    codesign --force --timestamp --sign "$DEVELOPER_ID_APPLICATION" "$DMG_PATH"
+    codesign --verify --verbose=2 "$DMG_PATH"
+fi
+
+if [ -n "${NOTARY_PROFILE:-}" ]; then
+    xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun stapler staple "$DMG_PATH"
+    xcrun stapler validate "$DMG_PATH"
+    spctl --assess --type open --context context:primary-signature --verbose "$DMG_PATH"
+fi
+
+shasum -a 256 "$DMG_PATH"
+
 echo "DMG creado en: $DMG_PATH"

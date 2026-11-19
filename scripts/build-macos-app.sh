@@ -19,6 +19,14 @@ if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
     exit 1
 fi
 
+if [ -n "${DEVELOPER_ID_APPLICATION:-}" ] &&
+    ! security find-identity -v -p codesigning | grep -qF "$DEVELOPER_ID_APPLICATION"; then
+    echo "No hay ninguna identidad de firma que contenga: $DEVELOPER_ID_APPLICATION" >&2
+    echo "Identidades disponibles en el llavero:" >&2
+    security find-identity -v -p codesigning >&2
+    exit 1
+fi
+
 swift scripts/generate-icon.swift
 swift build -c release --product "$APP_NAME"
 
@@ -100,6 +108,14 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --deep --sign - "$APP_DIR"
+# Firma: Developer ID con hardened runtime si se define DEVELOPER_ID_APPLICATION
+# (por ejemplo "Developer ID Application: Nombre (TEAMID)"); si no, ad-hoc.
+if [ -n "${DEVELOPER_ID_APPLICATION:-}" ]; then
+    codesign --force --options runtime --timestamp \
+        --sign "$DEVELOPER_ID_APPLICATION" "$APP_DIR"
+    codesign --verify --strict --verbose=2 "$APP_DIR"
+else
+    codesign --force --deep --sign - "$APP_DIR"
+fi
 
 echo "App creada en: $APP_DIR"
