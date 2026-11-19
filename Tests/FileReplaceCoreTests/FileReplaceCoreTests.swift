@@ -365,10 +365,18 @@ private struct TemporaryFixture {
     let url: URL
 
     init() throws {
-        url = FileManager.default.temporaryDirectory
+        let created = FileManager.default.temporaryDirectory
             .appendingPathComponent("ReplacerTests")
             .appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: created, withIntermediateDirectories: true)
+        // En macOS el directorio temporal cuelga de /var, un enlace a /private/var,
+        // y el servicio informa de la ruta real; los tests comparan con esa.
+        // `resolvingSymlinksInPath()` no sirve: en macOS quita «/private» a propósito.
+        guard let resolved = realpath(created.path, nil) else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        defer { free(resolved) }
+        url = URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
     }
 
     @discardableResult
