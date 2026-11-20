@@ -3,6 +3,13 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Este proyecto usa versionado semántico.
 
+## [Unreleased]
+
+### Interno
+
+- Target de Xcode en `1.4.1` (build `8`) para el próximo envío al Mac App Store. Se
+  salta el build `7`, que usa el DMG 1.4.1.
+
 ## [1.4.1] - 2026-11-20
 
 Solo DMG. La versión del Mac App Store sigue siendo la 1.4.0, cuyo binario no cambia.
@@ -213,6 +220,7 @@ Distribución limitada para Apple Silicon. Firma ad-hoc, sin notarización.
 
 - Primera versión: app macOS SwiftUI con módulo core testeable y versión Flask heredada.
 
+[Unreleased]: https://github.com/edfrutos/file-replace-app/compare/v1.4.1...HEAD
 [1.4.1]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.4.1
 [1.4.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.4.0
 [1.3.0]: https://github.com/edfrutos/file-replace-app/releases/tag/v1.3.0

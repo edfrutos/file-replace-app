@@ -33,7 +33,7 @@ La configuración principal está en `Package.swift`:
   Los DMG anteriores usaban `local.replacer.app`; la app migra sus ajustes una vez
   (`LegacyDefaultsMigration`).
 - Fuente de versión: `Sources/FileReplaceCore/ReplacerBuildInfo.swift` (`ReplacerBuildInfo.version`)
-- Versión mostrada actualmente: `1.4.1` (solo DMG; la del Mac App Store sigue en `1.4.0`)
+- Versión mostrada actualmente: `1.4.1` (el target de Xcode ya está en `1.4.1`; en el Mac App Store sigue publicada la `1.4.0` hasta el próximo envío)
 - Build del bundle: `7`
 - macOS mínimo del bundle: `14.0`
 - Firma: ad-hoc local con `codesign --sign -`, o Developer ID con *hardened runtime* si se
@@ -49,8 +49,8 @@ La configuración principal está en `Package.swift`:
 
 - Scheme compartido: `Replacer App Store`
 - Bundle identifier: `com.edefrutos.Replacer`
-- Versión: `1.4.0` (`MARKETING_VERSION`, a mano igual que `ReplacerBuildInfo.version`)
-- Build: `6` (`CURRENT_PROJECT_VERSION`; el `3` fue el de 1.3.0, el `4` el de 1.3.1 y el `5` el primero de 1.4.0, estos dos solo en TestFlight)
+- Versión: `1.4.1` (`MARKETING_VERSION`, a mano igual que `ReplacerBuildInfo.version`)
+- Build: `8` (`CURRENT_PROJECT_VERSION`; el `3` fue el de 1.3.0, el `4` el de 1.3.1, el `5` el primero de 1.4.0, estos dos solo en TestFlight, y el `6` el de 1.4.0 publicada. El `7` lo usa el DMG 1.4.1, así que se salta para que Xcode y el DMG no compartan número)
 - Info.plist: generado por Xcode y fusionado con `Replacer/Replacer-Info.plist` (carpetas en el Dock, servicio de Finder, idiomas `es` y `en`)
 - Entitlements: `Sources/FileReplaceApp/Replacer.entitlements` (sandbox, archivos elegidos por el usuario y marcadores de seguridad)
 - macOS mínimo: `14.0`
