@@ -3,7 +3,7 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Este proyecto usa versionado semántico.
 
-## [1.4.1] - 2026-11-19
+## [1.4.1] - 2026-11-20
 
 Solo DMG. La versión del Mac App Store sigue siendo la 1.4.0, cuyo binario no cambia.
 
